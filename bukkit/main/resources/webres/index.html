@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerCapturer!</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="icon.ico" type="image/png">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PowerCapturer!</h1>
+            <button id="settings-btn" class="settings-btn" aria-label="Open settings">⚙️</button>
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="label">TPS:</span>
+                    <span id="tps" class="value tps-value">20.0</span>
+                    <span id="tps-badge" class="status-badge badge-good" aria-hidden="true">Good</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">MSPT:</span>
+                    <span id="mspt" class="value">0.0ms</span>
+                    <button id="mspt-help-btn" class="help-icon" aria-label="What is MSPT?">?</button>
+                    <div id="mspt-help-tooltip" class="mspt-tooltip" role="dialog" aria-hidden="true">
+                        <div class="mspt-tooltip-title">What is MSPT?</div>
+                        <div class="mspt-tooltip-body">MSPT = milliseconds per server tick. Lower is better. Don't let your MSPT fall above 50ms!</div>
+                    </div>
+                    <span id="mspt-badge" class="status-badge badge-excellent" aria-hidden="true">Excellent</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Players:</span>
+                    <span id="players" class="value">0</span>
+                    <div id="players-list" class="players-list" aria-live="polite"></div>
+                </div>
+                <div class="status-item">
+                    <span class="label">Entities:</span>
+                    <span id="entities" class="value">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Chunks:</span>
+                    <span id="chunks" class="value">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">Memory:</span>
+                    <span id="memory" class="value">0 MB</span>
+                    <button id="memory-help-btn" class="help-icon" aria-label="What is Memory?">?</button>
+                    <div id="memory-help-tooltip" class="mspt-tooltip" role="dialog" aria-hidden="true">
+                        <div class="mspt-tooltip-title">What does Memory show?</div>
+                        <div class="mspt-tooltip-body">Displays the server JVM memory: used memory / maximum heap size in megabytes. Watch used memory to detect leaks or when the server approaches its max heap.</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="dashboard">
+                <div class="card">
+                <h2 id="tps-history-title">TPS & MSPT History</h2>
+                <canvas id="tpsChart"></canvas>
+            </div>
+
+            <div class="card">
+                <h2>Memory Usage</h2>
+                <canvas id="memoryChart"></canvas>
+            </div>
+            <div class="card">
+                <h2>Player Count</h2>
+                <canvas id="playersChart"></canvas>
+            </div>
+        </div>
+
+        <footer>
+            <p>PowerCapturer!</p>
+            <p>Brought to you by your server!</p>
+            <p>Powerhouse and its components are created by KaiakK.</p>
+        </footer>
+    <div id="settings-modal" class="settings-modal" aria-hidden="true">
+        <div class="settings-panel">
+            <h3>Dashboard Settings</h3>
+            <label><input type="checkbox" id="setting-auto-refresh" checked /> Enable Auto-refresh</label>
+            <label>Refresh interval (seconds): <input type="number" id="setting-refresh-interval" min="1" value="2" /></label>
+            <label id="setting-admin-token-row" style="display:none;">Admin token: <input type="password" id="setting-admin-token" placeholder="Paste admin token" /></label>
+            <div class="settings-actions">
+                <button id="settings-save" class="btn">Save</button>
+                <button id="settings-cancel" class="btn btn-ghost">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="animation.js"></script>
+</body>
+</html>

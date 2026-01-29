@@ -1,0 +1,22 @@
+name: Powerhouse
+version: '1.15.0'
+main: kaiakk.powerhouse.Powerhouse
+api-version: '1.13'
+authors: [ KaiakK ]
+description: A revamped version of my failed plugin LagStabilizer, now with way more features and better efficient optimization methods!
+website: https://modrinth.com/plugin/powerhouse
+folia-supported: true
+load: POSTWORLD
+softdepend: [ Multimedia ]
+
+commands:
+  powerhouse:
+    description: "Do various things with Powerhouse that are related to debugging and maintenance."
+    usage: "/powerhouse <stats|mspt|isculled|ai|jvm|purge|reload|web>"
+    permission: powerhouse
+    permission-message: "You don't have permission to use this command."
+
+permissions:
+  powerhouse:
+    description: "Use all Powerhouse commands."
+    default: op

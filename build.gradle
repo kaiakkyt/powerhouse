@@ -1,0 +1,84 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1' 
+    id 'com.gradleup.shadow' version '8.3.0'
+}
+
+group = 'kaiakk'
+version = '1.15.0'
+def targetJavaVersion = 8
+
+repositories {
+    mavenCentral()
+    maven {
+        name = "spigotmc-repo"
+        url = "https://hub.spigotmc.org/nexus/service/rest/repository/browse/snapshots/org/spigotmc/spigot-api/"
+    }
+    maven {
+        name = "papermc-repo"
+        url = "https://repo.papermc.io/repository/maven-public/"
+    }
+    maven {
+        name = "sonatype"
+        url = "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+    
+}
+
+sourceSets {
+    bukkit {
+        java {
+            srcDirs = ['bukkit/main/java']
+        }
+        resources {
+            srcDirs = ['bukkit/main/resources']
+        }
+    }
+}
+
+configurations {
+    bukkitCompileOnly.extendsFrom compileOnly
+    bukkitImplementation.extendsFrom implementation
+    bukkitRuntimeClasspath.extendsFrom runtimeClasspath
+}
+
+
+dependencies {
+    add('bukkitCompileOnly', 'org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT')
+    add('bukkitImplementation', files('dependencies/Multimedia-1.10.1.jar'))
+    add('bukkitImplementation', 'org.nanohttpd:nanohttpd:2.3.1')
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
+    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
+}
+
+tasks.named('processBukkitResources', ProcessResources) {
+    filteringCharset = 'UTF-8'
+    
+    filesMatching('plugin.yml') {
+        expand(version: version)
+    }
+}
+
+tasks.register('shadowBukkitJar', com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+    dependsOn 'compileBukkitJava', 'processBukkitResources'
+    archiveBaseName.set('Powerhouse')
+    archiveClassifier.set('')
+    archiveVersion.set(version)
+    from sourceSets.bukkit.output
+    configurations = [project.configurations.bukkitRuntimeClasspath]
+    relocate 'kaiakk.multimedia', 'kaiakk.powerhouse.lib.multimedia'
+    relocate 'org.nanohttpd', 'kaiakk.powerhouse.lib.nanohttpd'
+    mergeServiceFiles()
+}
+
+tasks.build {
+    dependsOn shadowBukkitJar
+}
+
+jar.enabled = false
+tasks.named('shadowJar').configure {
+    enabled = false
+}
