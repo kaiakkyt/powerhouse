@@ -76,8 +76,8 @@ Powerhouse's full changelog!
 - Small internal restructuring.
 
 ## v1.15.0
-- FIxed data gathering for Folia servers, also fixed the bug where used to incorrectly detect Paper servers as Folia.
+- Fixed data gathering for Folia servers, also fixed the bug where used to incorrectly detect Paper servers as Folia.
 - The web dashboard finally has a name, PowerCapturer!
-- Updated PowerCapturer, pretty big new things and changes.
+- Updated PowerCapturer, pretty new changes.
 - Updated the server controller, since was outdated.
 - More internal restructuring, with more re-programming instead.
