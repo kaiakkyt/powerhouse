@@ -81,3 +81,9 @@ Powerhouse's full changelog!
 - Updated PowerCapturer, pretty new changes.
 - Updated the server controller, since was outdated.
 - More internal restructuring, with more re-programming instead.
+
+## v1.15.1
+- Finishing the bridge for the Powerhouse-Axior support, added Axior support to Powerhouse now.
+
+## v1.16.0
+- Working on proxy support for Bungee and Velocity.
