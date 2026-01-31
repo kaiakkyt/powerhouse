@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.helpers.other;
+package kaiakk.powerhouse.calculations;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Item;

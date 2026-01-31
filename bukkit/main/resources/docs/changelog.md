@@ -89,5 +89,6 @@ Powerhouse's full changelog!
 ## v1.20.0
 - Working on making Powerhouse proxy aware of Bungee and Velocity.
 - Bringing back *some* hardware statistics from LagStabilizer!
-- Major internal restructuring, no longer just divided by sync and async and now 5x more modular!
+- **Major** internal restructuring, no longer just divided by sync and async and now 5x more modular!
 - Added a few aliases to the ```/powerhouse``` command.
+- Updated the leak prevention, due to continously rising RAM usage that still happened.

@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.helpers.other;
+package kaiakk.powerhouse.helpers.internal;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.configuration.file.FileConfiguration;

@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.helpers.internal;
+package kaiakk.powerhouse.helpers.logs;
 
 import kaiakk.multimedia.classes.ConsoleLog;
 import kaiakk.powerhouse.world.AllOptimizations;

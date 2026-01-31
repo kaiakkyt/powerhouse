@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.data;
+package kaiakk.powerhouse.data.collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;

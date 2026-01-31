@@ -2,7 +2,7 @@ package kaiakk.powerhouse.java;
 
 import org.bukkit.event.HandlerList;
 
-import kaiakk.powerhouse.helpers.other.ConfigHelp;
+import kaiakk.powerhouse.helpers.internal.ConfigHelp;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -48,7 +48,7 @@ public final class LeakPrevention {
 
 		try { kaiakk.powerhouse.world.limiters.BookLimiter.shutdown(); } catch (Exception e) { if (VERBOSE) e.printStackTrace(); }
 
-		try { kaiakk.powerhouse.helpers.other.ConfigHelp.shutdown(); } catch (Exception e) { if (VERBOSE) e.printStackTrace(); }
+		try { kaiakk.powerhouse.helpers.internal.ConfigHelp.shutdown(); } catch (Exception e) { if (VERBOSE) e.printStackTrace(); }
 
 		String[] otherSingletons = new String[]{
 			kaiakk.powerhouse.world.physics.ProjectileManager.class.getName(),
@@ -122,6 +122,83 @@ public final class LeakPrevention {
 			} catch (Throwable t) {
 				if (VERBOSE) { System.err.println("LeakPrevention: purgeCollections error for " + className + " -> " + t); t.printStackTrace(System.err); }
 			}
+		}
+
+		// Attempt a broader purge across plugin classes under our package to clear
+		// static maps/collections which commonly retain memory over time.
+		try {
+			org.bukkit.plugin.Plugin p = kaiakk.powerhouse.Powerhouse.getInstance();
+			purgePluginStatics(p, "kaiakk.powerhouse");
+		} catch (Throwable ignored) {}
+	}
+
+	private static void purgePluginStatics(org.bukkit.plugin.Plugin plugin, String packagePrefix) {
+		if (plugin == null) return;
+		try {
+			java.net.URL url = plugin.getClass().getProtectionDomain().getCodeSource().getLocation();
+			if (url == null) return;
+			java.io.File file = new java.io.File(url.toURI());
+			if (file.exists()) {
+				if (file.isFile()) {
+					try (java.util.jar.JarFile jf = new java.util.jar.JarFile(file)) {
+						java.util.Enumeration<java.util.jar.JarEntry> entries = jf.entries();
+						while (entries.hasMoreElements()) {
+							java.util.jar.JarEntry je = entries.nextElement();
+							String name = je.getName();
+							if (!name.endsWith(".class")) continue;
+							if (!name.startsWith(packagePrefix.replace('.', '/') + "/")) continue;
+							String className = name.substring(0, name.length() - 6).replace('/', '.');
+							try {
+								Class<?> clazz = Class.forName(className, false, LeakPrevention.class.getClassLoader());
+								for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
+									int mods = field.getModifiers();
+									if (!java.lang.reflect.Modifier.isStatic(mods)) continue;
+									Class<?> t = field.getType();
+									if (java.util.Map.class.isAssignableFrom(t) || java.util.Collection.class.isAssignableFrom(t)) {
+										field.setAccessible(true);
+										Object collection = null;
+										try { collection = field.get(null); } catch (Throwable ignored) {}
+										if (collection != null) {
+											try { if (collection instanceof java.util.Map) ((java.util.Map) collection).clear(); else if (collection instanceof java.util.Collection) ((java.util.Collection) collection).clear(); } catch (Throwable ignored) {}
+										}
+										try { setStaticField(clazz, field.getName(), null); } catch (Throwable ignored) {}
+									}
+								}
+							} catch (Throwable ignored) {}
+						}
+					}
+				} else if (file.isDirectory()) {
+					java.nio.file.Path root = file.toPath();
+					java.nio.file.Path pkgPath = root.resolve(packagePrefix.replace('.', java.io.File.separatorChar));
+					if (java.nio.file.Files.exists(pkgPath)) {
+						java.nio.file.Files.walk(pkgPath).forEach(p -> {
+							if (!p.toString().endsWith(".class")) return;
+							try {
+								String rel = root.relativize(p).toString().replace(java.io.File.separatorChar, '/');
+								if (!rel.startsWith(packagePrefix.replace('.', '/') + "/")) return;
+								String className = rel.substring(0, rel.length() - 6).replace('/', '.');
+								Class<?> clazz = Class.forName(className, false, LeakPrevention.class.getClassLoader());
+								for (java.lang.reflect.Field field : clazz.getDeclaredFields()) {
+									int mods = field.getModifiers();
+									if (!java.lang.reflect.Modifier.isStatic(mods)) continue;
+									Class<?> t = field.getType();
+									if (java.util.Map.class.isAssignableFrom(t) || java.util.Collection.class.isAssignableFrom(t)) {
+										field.setAccessible(true);
+										Object collection = null;
+										try { collection = field.get(null); } catch (Throwable ignored) {}
+										if (collection != null) {
+											try { if (collection instanceof java.util.Map) ((java.util.Map) collection).clear(); else if (collection instanceof java.util.Collection) ((java.util.Collection) collection).clear(); } catch (Throwable ignored) {}
+										}
+										try { setStaticField(clazz, field.getName(), null); } catch (Throwable ignored) {}
+									}
+								}
+							} catch (Throwable ignored) {}
+						});
+					}
+				}
+			}
+		} catch (Throwable t) {
+			if (VERBOSE) { System.err.println("LeakPrevention: error scanning plugin classes: " + t); t.printStackTrace(System.err); }
 		}
 	}
 

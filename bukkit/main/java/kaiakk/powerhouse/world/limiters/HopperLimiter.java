@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import kaiakk.powerhouse.data.BlockKey;
 import kaiakk.powerhouse.data.RecentActionTracker;
-import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
 import kaiakk.powerhouse.helpers.scaling.Scalable;
 import kaiakk.powerhouse.helpers.scaling.ScaleUtils;
 

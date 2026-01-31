@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.external.plugin;
+package kaiakk.powerhouse.external;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -6,7 +6,7 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 
-import kaiakk.powerhouse.external.ProxyAwareness;
+import kaiakk.powerhouse.external.support.ProxyAwareness;
 import kaiakk.powerhouse.world.AllOptimizations;
 
 import java.math.BigDecimal;

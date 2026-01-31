@@ -1,6 +1,6 @@
 package kaiakk.powerhouse.calculations;
 
-import kaiakk.powerhouse.data.MetricCollector;
+import kaiakk.powerhouse.data.collectors.MetricCollector;
 import kaiakk.powerhouse.helpers.scaling.ScaleUtils;
 import kaiakk.powerhouse.world.controllers.DistanceController;
 

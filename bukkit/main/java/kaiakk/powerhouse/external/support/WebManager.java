@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.external;
+package kaiakk.powerhouse.external.support;
 
 import fi.iki.elonen.NanoHTTPD;
 import kaiakk.powerhouse.world.*;

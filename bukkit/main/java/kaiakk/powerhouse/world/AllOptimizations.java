@@ -23,10 +23,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import kaiakk.powerhouse.calculations.Calculations;
-import kaiakk.powerhouse.data.MetricCollector;
 import kaiakk.powerhouse.data.RecentActionTracker;
-import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
-import kaiakk.powerhouse.helpers.other.CalculationsSync;
+import kaiakk.powerhouse.data.collectors.MetricCollector;
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
+import kaiakk.powerhouse.calculations.CalculationsSync;
 import kaiakk.powerhouse.helpers.scaling.Scalable;
 import kaiakk.powerhouse.helpers.scaling.ScaleUtils;
 import kaiakk.powerhouse.world.entity.EntityPusher;
@@ -228,7 +228,7 @@ public class AllOptimizations implements Listener {
             try { kaiakk.powerhouse.world.explosion.ExplosionListener.init(plugin); } catch (Throwable ignored) {}
             try { kaiakk.powerhouse.world.physics.PassivePhysicsManager.init(plugin); } catch (Throwable ignored) {}
             
-            try { int secs = kaiakk.powerhouse.helpers.other.ConfigHelp.getInt("recent-action.window-seconds", 30); RecentActionTracker.getInstance().setRetentionWindowSeconds(secs); } catch (Throwable ignored) {}
+            try { int secs = kaiakk.powerhouse.helpers.internal.ConfigHelp.getInt("recent-action.window-seconds", 30); RecentActionTracker.getInstance().setRetentionWindowSeconds(secs); } catch (Throwable ignored) {}
         } catch (Throwable ignored) {}
         
         PowerhouseLogger.info("Starting Powerhouse optimization systems...");
@@ -239,7 +239,7 @@ public class AllOptimizations implements Listener {
         
         startRedstoneCullingTask();
         try {
-            final int nudgeDelay = kaiakk.powerhouse.helpers.other.ConfigHelp.getInt("redstone-culling.nudge-delay-ticks", 2);
+            final int nudgeDelay = kaiakk.powerhouse.helpers.internal.ConfigHelp.getInt("redstone-culling.nudge-delay-ticks", 2);
             Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
                 @Override
                 public void run() {
@@ -492,7 +492,7 @@ public class AllOptimizations implements Listener {
             try { lastItemScan.remove(w); } catch (Throwable ignored) {}
             try { lastRedstoneScan.remove(w); } catch (Throwable ignored) {}
             try { kaiakk.powerhouse.calculations.Calculations.clearWorldData(w.getName()); } catch (Throwable ignored) {}
-            try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("Powerhouse: cleared caches for unloaded world: " + w.getName()); } catch (Throwable ignored) {}
+            try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("Powerhouse: cleared caches for unloaded world: " + w.getName()); } catch (Throwable ignored) {}
         } catch (Throwable ignored) {}
     }
     
@@ -765,7 +765,7 @@ private void startItemMergingTask(final World world) {
         }
 
         if (mergedCount.get() > 0) {
-            kaiakk.powerhouse.helpers.internal.DebugLog.debug("Merged " + mergedCount.get() + " items into " + mergeGroups.size() + " stacks");
+            kaiakk.powerhouse.helpers.logs.DebugLog.debug("Merged " + mergedCount.get() + " items into " + mergeGroups.size() + " stacks");
         }
     }
     
@@ -883,7 +883,7 @@ private void startItemMergingTask(final World world) {
                         if (mspt > 0.0 && ScaleUtils.continuousScaleFromMspt(mspt) > recoveredScale) {
                             try {
                                 Calculations.uncullAll();
-                                kaiakk.powerhouse.helpers.internal.DebugLog.debug("Powerhouse: redstone safety valve - cleared all culled locations as MSPT recovered (" + String.format("%.1f", mspt) + "mspt)");
+                                kaiakk.powerhouse.helpers.logs.DebugLog.debug("Powerhouse: redstone safety valve - cleared all culled locations as MSPT recovered (" + String.format("%.1f", mspt) + "mspt)");
                             } catch (Throwable ignored) {}
                         }
                     } catch (Throwable ignored) {}
@@ -936,7 +936,7 @@ private void startItemMergingTask(final World world) {
         }
     }, (double) REDSTONE_CHECK_INTERVAL_SECONDS, (double) REDSTONE_CHECK_INTERVAL_SECONDS);
     
-    kaiakk.powerhouse.helpers.internal.DebugLog.debug("Adaptive redstone culling active!");
+    kaiakk.powerhouse.helpers.logs.DebugLog.debug("Adaptive redstone culling active!");
 }
     
     private void startCleanupTask() {
@@ -993,7 +993,7 @@ private void startItemMergingTask(final World world) {
                                             } catch (Throwable ignored) {}
                                         } catch (Throwable ignored) {}
                                         String locStr = formatLocation(loc);
-                                        kaiakk.powerhouse.helpers.internal.DebugLog.debug("Restored redstone at: " + locStr);
+                                        kaiakk.powerhouse.helpers.logs.DebugLog.debug("Restored redstone at: " + locStr);
 
                                     }
                                 }
@@ -1105,7 +1105,7 @@ private void startItemMergingTask(final World world) {
                     } catch (Throwable ignored) {}
                 }
                 if (removed > 0) {
-                    kaiakk.powerhouse.helpers.internal.DebugLog.debug("Pruned " + removed + " sign/skull tile-entities from ticking lists (best-effort)");
+                    kaiakk.powerhouse.helpers.logs.DebugLog.debug("Pruned " + removed + " sign/skull tile-entities from ticking lists (best-effort)");
                 }
             }
         }, 20L);
@@ -1156,14 +1156,14 @@ private void startItemMergingTask(final World world) {
                 try {
                     java.lang.reflect.Method die = handle.getClass().getMethod("die");
                     die.invoke(handle);
-                    kaiakk.powerhouse.helpers.internal.DebugLog.debug("markEntityDead via die(): " + ent.getType() + " @ " + ent.getLocation());
+                    kaiakk.powerhouse.helpers.logs.DebugLog.debug("markEntityDead via die(): " + ent.getType() + " @ " + ent.getLocation());
                     return;
                 } catch (Throwable ignored) {}
 
                 try {
                     java.lang.reflect.Method setDead = handle.getClass().getMethod("setDead");
                     setDead.invoke(handle);
-                    try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("markEntityDead via setDead(): " + ent.getType() + " @ " + ent.getLocation()); } catch (Throwable ignored) {}
+                    try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("markEntityDead via setDead(): " + ent.getType() + " @ " + ent.getLocation()); } catch (Throwable ignored) {}
                     return;
                 } catch (Throwable ignored) {}
 
@@ -1171,7 +1171,7 @@ private void startItemMergingTask(final World world) {
                     java.lang.reflect.Field deadField = handle.getClass().getDeclaredField("dead");
                     deadField.setAccessible(true);
                     deadField.setBoolean(handle, true);
-                    try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("markEntityDead via dead field: " + ent.getType() + " @ " + ent.getLocation()); } catch (Throwable ignored) {}
+                    try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("markEntityDead via dead field: " + ent.getType() + " @ " + ent.getLocation()); } catch (Throwable ignored) {}
                     return;
                 } catch (Throwable ignored) {}
 

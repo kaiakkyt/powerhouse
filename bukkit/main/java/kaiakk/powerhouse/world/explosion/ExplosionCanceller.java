@@ -3,7 +3,7 @@ package kaiakk.powerhouse.world.explosion;
 import kaiakk.multimedia.classes.SchedulerHelper;
 import kaiakk.powerhouse.data.BlockKey;
 import kaiakk.powerhouse.data.RecentActionTracker;
-import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
 import kaiakk.powerhouse.helpers.scaling.ScaleUtils;
 
 import org.bukkit.Bukkit;

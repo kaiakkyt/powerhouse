@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.external;
+package kaiakk.powerhouse.external.support;
 
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;

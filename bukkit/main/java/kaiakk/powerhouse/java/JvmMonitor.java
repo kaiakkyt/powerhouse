@@ -5,7 +5,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.scheduler.BukkitTask;
 
-import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
 import kaiakk.powerhouse.helpers.scaling.ScaleUtils;
 
 import java.util.concurrent.atomic.AtomicInteger;

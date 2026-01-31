@@ -45,7 +45,7 @@ configurations {
 
 dependencies {
     add('bukkitCompileOnly', 'org.spigotmc:spigot-api:1.16.5-R0.1-SNAPSHOT')
-    add('bukkitImplementation', files('dependencies/Multimedia-1.10.1.jar'))
+    add('bukkitImplementation', files('dependencies/Multimedia-2.00.0.jar'))
     add('bukkitImplementation', 'org.nanohttpd:nanohttpd:2.3.1')
 }
 

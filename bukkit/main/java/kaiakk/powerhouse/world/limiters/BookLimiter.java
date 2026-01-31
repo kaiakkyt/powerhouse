@@ -64,7 +64,7 @@ public class BookLimiter implements Listener {
             if (sanitized != null) {
                 
                 stack.setItemMeta(sanitized.getItemMeta());
-                try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("BookLagger: sanitized a malicious book"); } catch (Throwable ignored) {}
+                try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("BookLagger: sanitized a malicious book"); } catch (Throwable ignored) {}
                 return true;
             }
         } catch (Throwable ignored) {}

@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.calculations;
+package kaiakk.powerhouse.calculations.entity;
 
 import org.bukkit.entity.EntityType;
 

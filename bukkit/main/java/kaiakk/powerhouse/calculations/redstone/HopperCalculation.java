@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.calculations;
+package kaiakk.powerhouse.calculations.redstone;
 
 import org.bukkit.Location;
 

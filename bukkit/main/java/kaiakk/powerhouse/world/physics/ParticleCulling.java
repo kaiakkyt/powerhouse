@@ -2,7 +2,7 @@ package kaiakk.powerhouse.world.physics;
 
 import kaiakk.multimedia.classes.SchedulerHelper;
 import kaiakk.powerhouse.calculations.Calculations;
-import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;

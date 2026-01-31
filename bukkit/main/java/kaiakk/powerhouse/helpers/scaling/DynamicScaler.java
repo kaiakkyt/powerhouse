@@ -11,14 +11,14 @@ import java.util.function.Consumer;
 
 public class DynamicScaler {
     private final Plugin plugin;
-    private final kaiakk.powerhouse.data.MetricCollector metrics;
+    private final kaiakk.powerhouse.data.collectors.MetricCollector metrics;
     private final int pollIntervalTicks;
     private final List<Consumer<Double>> subscribers = new CopyOnWriteArrayList<>();
     private volatile BukkitTask task = null;
     private volatile double lastPublishedScale = Double.NaN;
     private static final double PUBLISH_DELTA = 0.01;
 
-    public DynamicScaler(Plugin plugin, kaiakk.powerhouse.data.MetricCollector metrics, int pollIntervalTicks) {
+    public DynamicScaler(Plugin plugin, kaiakk.powerhouse.data.collectors.MetricCollector metrics, int pollIntervalTicks) {
         this.plugin = plugin;
         this.metrics = metrics;
         this.pollIntervalTicks = Math.max(1, pollIntervalTicks);

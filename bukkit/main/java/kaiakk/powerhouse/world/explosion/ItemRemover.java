@@ -105,9 +105,9 @@ public class ItemRemover implements Listener {
                     if (!recentPlayer && !recentDispense) {
                         AllOptimizations inst = AllOptimizations.getInstance();
                         if (inst != null) inst.markEntityDead(it);
-                        kaiakk.powerhouse.helpers.internal.DebugLog.debug("ItemRemover: immediate removed " + stack.getType() + " @ " + it.getLocation());
+                        kaiakk.powerhouse.helpers.logs.DebugLog.debug("ItemRemover: immediate removed " + stack.getType() + " @ " + it.getLocation());
                     } else {
-                        kaiakk.powerhouse.helpers.internal.DebugLog.debug("ItemRemover: skipped recent player/dispense item " + stack.getType() + " @ " + it.getLocation());
+                        kaiakk.powerhouse.helpers.logs.DebugLog.debug("ItemRemover: skipped recent player/dispense item " + stack.getType() + " @ " + it.getLocation());
                     }
                 } catch (Throwable ignored) {}
             }
@@ -177,9 +177,9 @@ public class ItemRemover implements Listener {
                                     boolean recentDispense = false;
                                     try { BlockKey bk = BlockKey.from(it.getLocation()); if (bk != null && rt != null) recentDispense = rt.wasRecentDispense(bk); } catch (Throwable ignored) {}
                                     if (!recentPlayer && !recentDispense) {
-                                        AllOptimizations.getInstance().markEntityDead(it); itemRemovalsLocal++; kaiakk.powerhouse.helpers.internal.DebugLog.debug("ItemRemover: purge removed " + stack.getType() + " @ " + it.getLocation());
+                                        AllOptimizations.getInstance().markEntityDead(it); itemRemovalsLocal++; kaiakk.powerhouse.helpers.logs.DebugLog.debug("ItemRemover: purge removed " + stack.getType() + " @ " + it.getLocation());
                                     } else {
-                                        kaiakk.powerhouse.helpers.internal.DebugLog.debug("ItemRemover: purge skipped recent item " + stack.getType() + " @ " + it.getLocation());
+                                        kaiakk.powerhouse.helpers.logs.DebugLog.debug("ItemRemover: purge skipped recent item " + stack.getType() + " @ " + it.getLocation());
                                     }
                                 } catch (Throwable ignored) {}
                             }
@@ -282,8 +282,8 @@ public class ItemRemover implements Listener {
 
     public void reloadSettings() {
         try {
-            double d = kaiakk.powerhouse.helpers.other.ConfigHelp.getDouble("item-hiding.distance", 16.0);
-            double v = kaiakk.powerhouse.helpers.other.ConfigHelp.getDouble("item-hiding.velocity-threshold", 5.0);
+            double d = kaiakk.powerhouse.helpers.internal.ConfigHelp.getDouble("item-hiding.distance", 16.0);
+            double v = kaiakk.powerhouse.helpers.internal.ConfigHelp.getDouble("item-hiding.velocity-threshold", 5.0);
             this.hideDistance = d;
             this.hideDistanceSq = d * d;
             this.hideVelocityThreshold = v;

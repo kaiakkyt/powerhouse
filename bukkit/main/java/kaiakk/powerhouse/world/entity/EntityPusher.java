@@ -1,7 +1,7 @@
 package kaiakk.powerhouse.world.entity;
 
 import kaiakk.multimedia.classes.SchedulerHelper;
-import kaiakk.powerhouse.calculations.CrammingCalculator;
+import kaiakk.powerhouse.calculations.entity.CrammingCalculator;
 import kaiakk.powerhouse.data.snapshot.EntitySnapshot;
 import kaiakk.powerhouse.helpers.scaling.Scalable;
 import kaiakk.powerhouse.helpers.scaling.ScaleUtils;
@@ -204,7 +204,7 @@ public class EntityPusher implements Scalable {
                 SchedulerHelper.runAsync(plugin, () -> {
             final Set<UUID> toRemove = CrammingCalculator.calculateCrammingRemovals(snapCopy, radius, threshold);
             if (toRemove == null || toRemove.isEmpty()) return;
-                    try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("EntityPusher: cramming detection found " + (toRemove == null ? 0 : toRemove.size()) + " candidates"); } catch (Throwable ignored) {}
+                    try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("EntityPusher: cramming detection found " + (toRemove == null ? 0 : toRemove.size()) + " candidates"); } catch (Throwable ignored) {}
 
             SchedulerHelper.runLater(plugin, () -> {
                 int removed = 0;
@@ -221,7 +221,7 @@ public class EntityPusher implements Scalable {
                     if (ao != null) {
                         if (removed > 0) ao.addCrammingRemovals(removed);
                         if (removed > 0) {
-                            try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("EntityPusher: removed " + removed + " entities due to cramming (threshold=" + threshold + ", radius=" + radius + ")"); } catch (Throwable ignored) {}
+                            try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("EntityPusher: removed " + removed + " entities due to cramming (threshold=" + threshold + ", radius=" + radius + ")"); } catch (Throwable ignored) {}
                         }
                     }
                 } catch (Throwable ignored) {}

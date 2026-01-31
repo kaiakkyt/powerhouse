@@ -11,10 +11,11 @@ import kaiakk.multimedia.classes.*;
 import kaiakk.powerhouse.calculations.*;
 import kaiakk.powerhouse.data.*;
 import kaiakk.powerhouse.external.*;
+import kaiakk.powerhouse.external.support.WebManager;
 import kaiakk.powerhouse.helpers.*;
 import kaiakk.powerhouse.java.*;
-import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
-import kaiakk.powerhouse.helpers.other.ConfigHelp;
+import kaiakk.powerhouse.helpers.internal.ConfigHelp;
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
 import kaiakk.powerhouse.java.LeakPrevention;
 import kaiakk.powerhouse.world.*;
 
@@ -27,6 +28,7 @@ public final class Powerhouse extends JavaPlugin {
     private kaiakk.powerhouse.world.entity.AiManagement aiManagement;
     private kaiakk.powerhouse.world.explosion.ItemRemover itemRemover;
     private WebManager webManager;
+    private org.bukkit.scheduler.BukkitTask leakPreventionTask;
     private static Powerhouse INSTANCE = null;
 
     @Override
@@ -172,7 +174,7 @@ public final class Powerhouse extends JavaPlugin {
 
         ConsoleLog.init(this);
         PowerhouseLogger.info("Powerhouse is running on version " + this.getDescription().getVersion());
-        try { kaiakk.powerhouse.external.ProxyAwareness.startListening(this); } catch (Throwable ignored) {}
+        try { kaiakk.powerhouse.external.support.ProxyAwareness.startListening(this); } catch (Throwable ignored) {}
         
         optimizations = new AllOptimizations(this);
         optimizations.start();
@@ -260,6 +262,18 @@ public final class Powerhouse extends JavaPlugin {
         
         PowerhouseLogger.info("Powerhouse initialized!");
         PowerhouseLogger.info("Optimizing your server in the background!");
+
+        try {
+            leakPreventionTask = kaiakk.multimedia.classes.SchedulerHelper.runTimerMinutes(this, new Runnable() {
+                public void run() {
+                    try {
+                        kaiakk.powerhouse.java.LeakPrevention.purgeCollections();
+                    } catch (Throwable t) {
+                        try { kaiakk.powerhouse.helpers.logs.PowerhouseLogger.error("LeakPrevention periodic purge failed: " + t.getMessage()); } catch (Throwable ignored) {}
+                    }
+                }
+            }, 10.0, 10.0);
+        } catch (Throwable ignored) {}
     }
 
     private boolean handleStats(org.bukkit.command.CommandSender sender) {
@@ -675,7 +689,7 @@ public final class Powerhouse extends JavaPlugin {
 
         SchedulerHelper.run(this, new Runnable() {
             public void run() {
-                kaiakk.powerhouse.data.HardwareStats stats = new kaiakk.powerhouse.data.HardwareStats();
+                kaiakk.powerhouse.data.collectors.HardwareStats stats = new kaiakk.powerhouse.data.collectors.HardwareStats();
 
                 try {
                     int logical = Runtime.getRuntime().availableProcessors();
@@ -706,6 +720,10 @@ public final class Powerhouse extends JavaPlugin {
                     } catch (Throwable ignored) {}
                     stats.setCpuUsagePercent(cpuLoad);
 
+                    try {
+                        stats.detectPhysicalCores();
+                    } catch (Throwable ignored) {}
+
                     Runtime rt = Runtime.getRuntime();
                     long total = rt.totalMemory();
                     long free = rt.freeMemory();
@@ -727,7 +745,7 @@ public final class Powerhouse extends JavaPlugin {
                     try { PowerhouseLogger.error("hardware probe failed: " + t.getMessage()); } catch (Throwable ignored) {}
                 }
 
-                final kaiakk.powerhouse.data.HardwareStats toSend = stats;
+                final kaiakk.powerhouse.data.collectors.HardwareStats toSend = stats;
                 getServer().getScheduler().runTask(Powerhouse.this, new Runnable() {
                     public void run() {
                         sender.sendMessage(ColorConverter.colorize("&a=== Hardware Stats ==="));
@@ -767,7 +785,8 @@ public final class Powerhouse extends JavaPlugin {
     @Override
     public void onDisable() {
         PowerhouseLogger.info("Powerhouse shutting down!");
-        try { kaiakk.powerhouse.external.ProxyAwareness.stopListening(this); } catch (Throwable ignored) {}
+        try { kaiakk.powerhouse.external.support.ProxyAwareness.stopListening(this); } catch (Throwable ignored) {}
+        try { if (leakPreventionTask != null) kaiakk.multimedia.classes.SchedulerHelper.cancelTask(leakPreventionTask); } catch (Throwable ignored) {}
         
         if (optimizations != null) {
             optimizations.stop();

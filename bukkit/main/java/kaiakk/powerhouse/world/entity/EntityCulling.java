@@ -1,7 +1,7 @@
 package kaiakk.powerhouse.world.entity;
 
 import kaiakk.multimedia.classes.SchedulerHelper;
-import kaiakk.powerhouse.calculations.EntityCalculator;
+import kaiakk.powerhouse.calculations.entity.EntityCalculator;
 import kaiakk.powerhouse.data.RecentActionTracker;
 import kaiakk.powerhouse.data.snapshot.EntitySnapshot;
 import kaiakk.powerhouse.world.AllOptimizations;
@@ -149,7 +149,7 @@ public class EntityCulling {
 
 		if (!immediateRemovals.isEmpty()) {
 			final Set<UUID> toKillNow = new HashSet<UUID>(immediateRemovals);
-			try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("EntityCulling: scheduling immediate removals: " + toKillNow.size()); } catch (Throwable ignored) {}
+			try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("EntityCulling: scheduling immediate removals: " + toKillNow.size()); } catch (Throwable ignored) {}
 				SchedulerHelper.runLater(plugin, new Runnable() {
 				public void run() {
 					int removed = 0;
@@ -165,7 +165,7 @@ public class EntityCulling {
 							removed++;
 						} catch (Throwable ignored) {}
 					}
-					try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("EntityCulling: applied immediate removals, removed=" + removed); } catch (Throwable ignored) {}
+					try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("EntityCulling: applied immediate removals, removed=" + removed); } catch (Throwable ignored) {}
 				}
 			}, 1L);
 
@@ -179,7 +179,7 @@ public class EntityCulling {
 				final Set<UUID> toRemove = EntityCalculator.calculateCullCandidates(snapForAsync, playersForAsync, maxPerChunk, maxDistance);
 				if (toRemove == null || toRemove.isEmpty()) return;
 
-				try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("EntityCulling: async culling candidates=" + (toRemove == null ? 0 : toRemove.size())); } catch (Throwable ignored) {}
+				try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("EntityCulling: async culling candidates=" + (toRemove == null ? 0 : toRemove.size())); } catch (Throwable ignored) {}
 				SchedulerHelper.runLater(plugin, new Runnable() {
 					public void run() {
 						int removed = 0;
@@ -197,7 +197,7 @@ public class EntityCulling {
 								removed++;
 							} catch (Throwable ignored) {}
 						}
-						try { kaiakk.powerhouse.helpers.internal.DebugLog.debug("EntityCulling: applied async removals, removed=" + removed); } catch (Throwable ignored) {}
+						try { kaiakk.powerhouse.helpers.logs.DebugLog.debug("EntityCulling: applied async removals, removed=" + removed); } catch (Throwable ignored) {}
 					}
 				}, 1L);
 			}
