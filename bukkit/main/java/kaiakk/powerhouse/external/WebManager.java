@@ -1,12 +1,12 @@
 package kaiakk.powerhouse.external;
 
 import fi.iki.elonen.NanoHTTPD;
+import kaiakk.powerhouse.world.*;
+
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import kaiakk.powerhouse.sync.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +32,7 @@ public class WebManager extends NanoHTTPD {
         super(port);
         this.plugin = plugin;
 
-        this.isFolia = kaiakk.powerhouse.sync.FoliaChecker.isFolia(plugin);
+        this.isFolia = kaiakk.powerhouse.helpers.internal.FoliaChecker.isFolia(plugin);
 
         start(NanoHTTPD.SOCKET_READ_TIMEOUT, false);
         plugin.getLogger().info("NanoHTTPD web server started on port " + port);

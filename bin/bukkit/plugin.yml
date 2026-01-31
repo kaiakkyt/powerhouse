@@ -1,5 +1,5 @@
 name: Powerhouse
-version: '1.15.0'
+version: '1.20.0'
 main: kaiakk.powerhouse.Powerhouse
 api-version: '1.13'
 authors: [ KaiakK ]
@@ -15,6 +15,7 @@ commands:
     usage: "/powerhouse <stats|mspt|isculled|ai|jvm|purge|reload|web>"
     permission: powerhouse
     permission-message: "You don't have permission to use this command."
+    aliases: [ ph, pwr, power, pwh ] 
 
 permissions:
   powerhouse:

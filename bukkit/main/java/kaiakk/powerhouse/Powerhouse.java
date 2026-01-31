@@ -7,18 +7,25 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import org.bukkit.configuration.file.YamlConfiguration;
 import kaiakk.multimedia.classes.*;
-import kaiakk.powerhouse.async.*;
-import kaiakk.powerhouse.sync.*;
+
+import kaiakk.powerhouse.calculations.*;
+import kaiakk.powerhouse.data.*;
 import kaiakk.powerhouse.external.*;
+import kaiakk.powerhouse.helpers.*;
+import kaiakk.powerhouse.java.*;
+import kaiakk.powerhouse.helpers.internal.PowerhouseLogger;
+import kaiakk.powerhouse.helpers.other.ConfigHelp;
+import kaiakk.powerhouse.java.LeakPrevention;
+import kaiakk.powerhouse.world.*;
 
 public final class Powerhouse extends JavaPlugin {
 
     private AllOptimizations optimizations;
-    private kaiakk.powerhouse.sync.ServerController serverController;
-    private kaiakk.powerhouse.sync.ExplosionCanceller explosionCanceller;
-    private kaiakk.powerhouse.sync.EntityCulling entityCulling;
-    private kaiakk.powerhouse.sync.AiManagement aiManagement;
-    private kaiakk.powerhouse.sync.ItemRemover itemRemover;
+    private kaiakk.powerhouse.world.controllers.ServerController serverController;
+    private kaiakk.powerhouse.world.explosion.ExplosionCanceller explosionCanceller;
+    private kaiakk.powerhouse.world.entity.EntityCulling entityCulling;
+    private kaiakk.powerhouse.world.entity.AiManagement aiManagement;
+    private kaiakk.powerhouse.world.explosion.ItemRemover itemRemover;
     private WebManager webManager;
     private static Powerhouse INSTANCE = null;
 
@@ -71,6 +78,8 @@ public final class Powerhouse extends JavaPlugin {
                             return handlePurge(sender, args);
                         case "web":
                             return handleWeb(sender, args);
+                        case "hardware":
+                            return handleHardware(sender, args);
                         default:
                             break;
                     }
@@ -86,7 +95,7 @@ public final class Powerhouse extends JavaPlugin {
         try {
             TabCompleter.register(this, "powerhouse", (sender, args) -> {
                 java.util.List<String> suggestions = new java.util.ArrayList<>();
-                String[] subs = new String[]{"stats","mspt","debug","isculled","ai","jvm","purge","web","reload"};
+                String[] subs = new String[]{"stats","mspt","debug","isculled","ai","jvm","purge","web","reload","hardware"};
                 if (args.length == 0 || args.length == 1) {
                     String prefix = (args.length == 0) ? "" : args[0].toLowerCase();
                     for (String s : subs) if (s.startsWith(prefix)) suggestions.add(s);
@@ -127,6 +136,14 @@ public final class Powerhouse extends JavaPlugin {
                         } catch (Throwable t) {
                         }
                         return suggestions;
+                    
+                    }
+                    if ("hardware".equals(first)) {
+                        String prefix = args[1].toLowerCase();
+                        if ("cpu".startsWith(prefix)) suggestions.add("cpu");
+                        if ("ram".startsWith(prefix)) suggestions.add("ram");
+                        if ("storage".startsWith(prefix)) suggestions.add("storage");
+                        return suggestions;
                     }
                 }
 
@@ -155,38 +172,39 @@ public final class Powerhouse extends JavaPlugin {
 
         ConsoleLog.init(this);
         PowerhouseLogger.info("Powerhouse is running on version " + this.getDescription().getVersion());
+        try { kaiakk.powerhouse.external.ProxyAwareness.startListening(this); } catch (Throwable ignored) {}
         
         optimizations = new AllOptimizations(this);
         optimizations.start();
 
         try {
             try {
-                explosionCanceller = new kaiakk.powerhouse.sync.ExplosionCanceller(this, 20, 5000L, new java.util.function.DoubleSupplier() {
+                explosionCanceller = new kaiakk.powerhouse.world.explosion.ExplosionCanceller(this, 20, 5000L, new java.util.function.DoubleSupplier() {
                     public double getAsDouble() { return optimizations.getAverageMspt(); }
                 });
                 explosionCanceller.start();
             } catch (Throwable ignored) {}
 
             try {
-                entityCulling = new kaiakk.powerhouse.sync.EntityCulling(this, 16, 64.0, 10.0);
+                entityCulling = new kaiakk.powerhouse.world.entity.EntityCulling(this, 16, 64.0, 10.0);
                 entityCulling.start();
             } catch (Throwable ignored) {}
 
             try {
-                aiManagement = new kaiakk.powerhouse.sync.AiManagement(new java.util.function.DoubleSupplier() {
+                aiManagement = new kaiakk.powerhouse.world.entity.AiManagement(new java.util.function.DoubleSupplier() {
                     public double getAsDouble() { return optimizations.getAverageMspt(); }
                 });
                 aiManagement.start(this);
                 try { optimizations.registerScalable(aiManagement); } catch (Throwable ignored) {}
             } catch (Throwable ignored) {}
             try {
-                itemRemover = new kaiakk.powerhouse.sync.ItemRemover(this);
+                itemRemover = new kaiakk.powerhouse.world.explosion.ItemRemover(this);
                 itemRemover.start();
             } catch (Throwable ignored) {}
         } catch (Throwable ignored) {}
 
         try {
-            serverController = new kaiakk.powerhouse.sync.ServerController(this);
+            serverController = new kaiakk.powerhouse.world.controllers.ServerController(this);
             serverController.start();
         } catch (Throwable ignored) {}
         
@@ -261,7 +279,7 @@ public final class Powerhouse extends JavaPlugin {
     }
 
     private boolean handleMspt(org.bukkit.command.CommandSender sender) {
-        if (kaiakk.powerhouse.sync.FoliaChecker.isFolia(this)) {
+        if (kaiakk.powerhouse.helpers.internal.FoliaChecker.isFolia(this)) {
             sender.sendMessage(ColorConverter.colorize("&cMSPT is disabled on Folia due to incorrect reporting!"));
             return true;
         }
@@ -273,7 +291,7 @@ public final class Powerhouse extends JavaPlugin {
             try { interval = optimizations.getIntervalMspt(); } catch (Throwable ignored) {}
             double raw = -1.0;
             try { raw = optimizations.getAverageMspt(); } catch (Throwable ignored) {}
-            double smoothed = kaiakk.powerhouse.sync.ScaleUtils.getSmoothedMspt();
+            double smoothed = kaiakk.powerhouse.helpers.scaling.ScaleUtils.getSmoothedMspt();
 
             String source = "unknown";
             try { source = optimizations.getMsptSource(); } catch (Throwable ignored) {}
@@ -429,14 +447,14 @@ public final class Powerhouse extends JavaPlugin {
         try {
             switch (sub) {
                 case "status":
-                    kaiakk.powerhouse.sync.JvmMonitor.status(sender);
+                    kaiakk.powerhouse.java.JvmMonitor.status(sender);
                     return true;
                 case "gc":
-                    kaiakk.powerhouse.sync.JvmMonitor.runGc(sender);
+                    kaiakk.powerhouse.java.JvmMonitor.runGc(sender);
                     return true;
                 case "heapdump": {
                     String file = (args.length >= 3) ? args[2] : null;
-                    kaiakk.powerhouse.sync.JvmMonitor.heapDump(this, file, sender);
+                    kaiakk.powerhouse.java.JvmMonitor.heapDump(this, file, sender);
                     return true;
                 }
                 case "jfr":
@@ -652,9 +670,104 @@ public final class Powerhouse extends JavaPlugin {
         return true;
     }
     
+    private boolean handleHardware(org.bukkit.command.CommandSender sender, String[] args) {
+        sender.sendMessage(ColorConverter.colorize("&eCollecting hardware stats—this may take a moment..."));
+
+        SchedulerHelper.run(this, new Runnable() {
+            public void run() {
+                kaiakk.powerhouse.data.HardwareStats stats = new kaiakk.powerhouse.data.HardwareStats();
+
+                try {
+                    int logical = Runtime.getRuntime().availableProcessors();
+                    stats.setLogicalCores(logical);
+
+                    double cpuLoad = -1.0;
+                    try {
+                        java.lang.management.OperatingSystemMXBean mx = java.lang.management.ManagementFactory.getOperatingSystemMXBean();
+                        if (mx != null) {
+                            try {
+                                java.lang.reflect.Method m = mx.getClass().getMethod("getSystemCpuLoad");
+                                Object o = m.invoke(mx);
+                                if (o instanceof Number) {
+                                    double v = ((Number) o).doubleValue();
+                                    if (v >= 0.0) cpuLoad = v * 100.0;
+                                }
+                            } catch (NoSuchMethodException ns) {
+                                try {
+                                    java.lang.reflect.Method m2 = mx.getClass().getMethod("getCpuLoad");
+                                    Object o2 = m2.invoke(mx);
+                                    if (o2 instanceof Number) {
+                                        double v = ((Number) o2).doubleValue();
+                                        if (v >= 0.0) cpuLoad = v * 100.0;
+                                    }
+                                } catch (Throwable ignored2) {}
+                            } catch (Throwable ignored) {}
+                        }
+                    } catch (Throwable ignored) {}
+                    stats.setCpuUsagePercent(cpuLoad);
+
+                    Runtime rt = Runtime.getRuntime();
+                    long total = rt.totalMemory();
+                    long free = rt.freeMemory();
+                    long used = total - free;
+                    long max = rt.maxMemory();
+                    stats.setRamAllocatedBytes(total);
+                    stats.setRamUsedBytes(used);
+                    stats.setRamMaxBytes(max);
+
+                    File serverRoot = null;
+                    try {
+                        serverRoot = getServer().getWorldContainer();
+                    } catch (Throwable ignored) {}
+                    if (serverRoot == null) serverRoot = new File(".");
+
+                    long size = getFolderSize(serverRoot);
+                    stats.setServerFolderBytes(size);
+                } catch (Throwable t) {
+                    try { PowerhouseLogger.error("hardware probe failed: " + t.getMessage()); } catch (Throwable ignored) {}
+                }
+
+                final kaiakk.powerhouse.data.HardwareStats toSend = stats;
+                getServer().getScheduler().runTask(Powerhouse.this, new Runnable() {
+                    public void run() {
+                        sender.sendMessage(ColorConverter.colorize("&a=== Hardware Stats ==="));
+                        sender.sendMessage(ColorConverter.colorize("&7CPU logical cores: &e" + toSend.getLogicalCores()));
+                        double cpu = toSend.getCpuUsagePercent();
+                        sender.sendMessage(ColorConverter.colorize("&7CPU usage: &e" + (cpu >= 0.0 ? String.format("%.2f%%", cpu) : "n/a")));
+                        sender.sendMessage(ColorConverter.colorize("&7JVM allocated RAM: &e" + String.format("%.2f MB", toSend.getRamAllocatedMB())));
+                        sender.sendMessage(ColorConverter.colorize("&7JVM used RAM: &e" + String.format("%.2f MB", toSend.getRamUsedMB())));
+                        sender.sendMessage(ColorConverter.colorize("&7JVM max RAM: &e" + String.format("%.2f MB", toSend.getRamMaxMB())));
+                        sender.sendMessage(ColorConverter.colorize("&7Server folder size: &e" + String.format("%.2f MB", toSend.getServerFolderMB())));
+                    }
+                });
+            }
+        });
+
+        return true;
+    }
+    
+    private long getFolderSize(File folder) {
+        long length = 0L;
+        java.util.Deque<File> stack = new java.util.ArrayDeque<>();
+        if (folder != null) stack.push(folder);
+        while (!stack.isEmpty()) {
+            File current = stack.pop();
+            File[] files = current.listFiles();
+            if (files == null) continue;
+            for (File f : files) {
+                try {
+                    if (f.isFile()) length += f.length();
+                    else if (f.isDirectory()) stack.push(f);
+                } catch (Throwable ignored) {}
+            }
+        }
+        return length;
+    }
+    
     @Override
     public void onDisable() {
         PowerhouseLogger.info("Powerhouse shutting down!");
+        try { kaiakk.powerhouse.external.ProxyAwareness.stopListening(this); } catch (Throwable ignored) {}
         
         if (optimizations != null) {
             optimizations.stop();

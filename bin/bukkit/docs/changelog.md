@@ -84,6 +84,10 @@ Powerhouse's full changelog!
 
 ## v1.15.1
 - Finishing the bridge for the Powerhouse-Axior support, added Axior support to Powerhouse now.
+- Nothing much new.
 
-## v1.16.0
-- Working on proxy support for Bungee and Velocity.
+## v1.20.0
+- Working on making Powerhouse proxy aware of Bungee and Velocity.
+- Bringing back *some* hardware statistics from LagStabilizer!
+- Major internal restructuring, no longer just divided by sync and async and now 5x more modular!
+- Added a few aliases to the ```/powerhouse``` command.
