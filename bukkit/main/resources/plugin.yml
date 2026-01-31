@@ -1,5 +1,5 @@
 name: Powerhouse
-version: '1.20.0'
+version: '${version}'
 main: kaiakk.powerhouse.Powerhouse
 api-version: '1.13'
 authors: [ KaiakK ]
