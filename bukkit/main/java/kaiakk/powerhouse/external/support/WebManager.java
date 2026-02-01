@@ -152,7 +152,6 @@ public class WebManager extends NanoHTTPD {
                     File cfgFile = new File(plugin.getDataFolder(), "webconfig.yml");
                     YamlConfiguration yc = YamlConfiguration.loadConfiguration(cfgFile);
                     Map<String, Object> values = yc.getValues(false);
-                    boolean requiresToken = yc.contains("adminToken");
                     StringBuilder sb = new StringBuilder();
                     sb.append("{");
                     boolean first = true;
@@ -165,8 +164,6 @@ public class WebManager extends NanoHTTPD {
                         if (v instanceof Number || v instanceof Boolean) sb.append(v.toString());
                         else sb.append("\"").append(escapeJson(String.valueOf(v))).append("\"");
                     }
-                    if (!first) sb.append(",");
-                    sb.append("\"requiresAdminToken\":").append(requiresToken ? "true" : "false");
                     sb.append("}");
                     return newFixedLengthResponse(Response.Status.OK, "application/json", sb.toString());
                 } catch (Throwable t) {
@@ -414,7 +411,6 @@ public class WebManager extends NanoHTTPD {
         return String.format("{\"isFolia\":%s,\"lagSources\":[%s]}", isFolia, String.join(",", items));
     }
 
-    // Return a JSON object with an array `players` describing each online player.
     private String getPlayersJson() {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"players\":[");
@@ -458,18 +454,16 @@ public class WebManager extends NanoHTTPD {
         return sb.toString();
     }
     
-    // Augment lag sources response with a lightweight sampling-based plugin breakdown
-    // This will sample the main server thread for a short period and attribute stack samples to plugins.
     private String appendPluginBreakdownJson(String baseJson) {
         try {
-            Map<String, Integer> counts = sampleMainThreadOwners(200, 25); // 200ms @ 25ms -> ~8 samples
+            Map<String, Integer> counts = sampleMainThreadOwners(200, 25);
             int total = 0;
             for (int v : counts.values()) total += v;
             if (total == 0) return baseJson;
             List<Map.Entry<String,Integer>> list = new ArrayList<>(counts.entrySet());
             list.sort((a,b) -> Integer.compare(b.getValue(), a.getValue()));
             StringBuilder sb = new StringBuilder();
-            sb.append(baseJson.substring(0, baseJson.length()-1)); // drop trailing }
+            sb.append(baseJson.substring(0, baseJson.length()-1));
             sb.append(",\"pluginBreakdown\":[");
             boolean first = true;
             for (Map.Entry<String,Integer> e : list) {
@@ -515,12 +509,10 @@ public class WebManager extends NanoHTTPD {
         }
     }
 
-    // Sampling profiler helpers: attribute stack frames to plugins by checking plugin ClassLoaders for the class resource.
     private Map<String, Integer> sampleMainThreadOwners(int durationMs, int intervalMs) {
         Map<String, Integer> counts = new HashMap<>();
         int samples = Math.max(1, durationMs / Math.max(1, intervalMs));
 
-        // Build plugin classloader map once
         Map<ClassLoader, String> loaderToPlugin = new HashMap<>();
         try {
             org.bukkit.plugin.Plugin[] plugins = Bukkit.getPluginManager().getPlugins();
@@ -542,12 +534,10 @@ public class WebManager extends NanoHTTPD {
                 Map<Thread, StackTraceElement[]> all = Thread.getAllStackTraces();
                 StackTraceElement[] st = all.get(target);
                 if (st == null || st.length == 0) {
-                    // try again
                     Thread.sleep(Math.max(1, intervalMs));
                     continue;
                 }
 
-                // find first meaningful frame (skip jvm, java, net.minecraft/core server internals)
                 String owner = "server";
                 for (StackTraceElement e : st) {
                     String cls = e.getClassName();
@@ -556,7 +546,6 @@ public class WebManager extends NanoHTTPD {
                     if (low.startsWith("java.") || low.startsWith("jdk.") || low.startsWith("sun.") || low.startsWith("com.sun.")) continue;
                     if (low.startsWith("net.minecraft") || low.startsWith("org.bukkit") || low.startsWith("org.spigot") || low.startsWith("org.pf4j")) continue;
 
-                    // try to attribute via plugin classloaders: check resource existence
                     String path = cls.replace('.', '/') + ".class";
                     boolean found = false;
                     for (Map.Entry<ClassLoader, String> en : loaderToPlugin.entrySet()) {
@@ -571,7 +560,6 @@ public class WebManager extends NanoHTTPD {
                     }
                     if (found) break;
 
-                    // fallback: if class appears to be from a plugin package (contains lowercase plugin-like prefix), attribute to that package
                     if (!low.startsWith("net.minecraft") && !low.startsWith("org.bukkit") && low.contains(".")) {
                         owner = cls.split("\\.")[0];
                         break;
@@ -580,7 +568,6 @@ public class WebManager extends NanoHTTPD {
 
                 counts.put(owner, counts.getOrDefault(owner, 0) + 1);
             } catch (Throwable t) {
-                // ignore sampling errors
             }
 
             try { Thread.sleep(Math.max(1, intervalMs)); } catch (InterruptedException ignored) {}
@@ -597,7 +584,6 @@ public class WebManager extends NanoHTTPD {
                 String name = t.getName();
                 if (name != null && name.toLowerCase().contains("server")) return t;
             }
-            // fallback: find thread whose stack contains net.minecraft or org.bukkit
             for (Map.Entry<Thread, StackTraceElement[]> en : Thread.getAllStackTraces().entrySet()) {
                 StackTraceElement[] st = en.getValue();
                 if (st == null) continue;

@@ -92,3 +92,4 @@ Powerhouse's full changelog!
 - **Major** internal restructuring, no longer just divided by sync and async and now 5x more modular!
 - Added a few aliases to the ```/powerhouse``` command.
 - Updated the leak prevention, due to continously rising RAM usage that still happened.
+- Removed the token verification from PowerCapturer.

@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.java;
+package kaiakk.powerhouse.helpers.java;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.GarbageCollectorMXBean;

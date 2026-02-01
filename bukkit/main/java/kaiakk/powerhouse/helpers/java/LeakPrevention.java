@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.java;
+package kaiakk.powerhouse.helpers.java;
 
 import org.bukkit.event.HandlerList;
 

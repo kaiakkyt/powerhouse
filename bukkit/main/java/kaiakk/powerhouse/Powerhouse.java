@@ -2,10 +2,6 @@ package kaiakk.powerhouse;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
-import java.io.IOException;
-import java.security.SecureRandom;
-import java.util.Base64;
-import org.bukkit.configuration.file.YamlConfiguration;
 import kaiakk.multimedia.classes.*;
 
 import kaiakk.powerhouse.calculations.*;
@@ -13,10 +9,9 @@ import kaiakk.powerhouse.data.*;
 import kaiakk.powerhouse.external.*;
 import kaiakk.powerhouse.external.support.WebManager;
 import kaiakk.powerhouse.helpers.*;
-import kaiakk.powerhouse.java.*;
 import kaiakk.powerhouse.helpers.internal.ConfigHelp;
+import kaiakk.powerhouse.helpers.java.*;
 import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
-import kaiakk.powerhouse.java.LeakPrevention;
 import kaiakk.powerhouse.world.*;
 
 public final class Powerhouse extends JavaPlugin {
@@ -26,7 +21,7 @@ public final class Powerhouse extends JavaPlugin {
     private kaiakk.powerhouse.world.explosion.ExplosionCanceller explosionCanceller;
     private kaiakk.powerhouse.world.entity.EntityCulling entityCulling;
     private kaiakk.powerhouse.world.entity.AiManagement aiManagement;
-    private kaiakk.powerhouse.world.explosion.ItemRemover itemRemover;
+    private kaiakk.powerhouse.world.physics.ItemRemover itemRemover;
     private WebManager webManager;
     private org.bukkit.scheduler.BukkitTask leakPreventionTask;
     private static Powerhouse INSTANCE = null;
@@ -106,11 +101,6 @@ public final class Powerhouse extends JavaPlugin {
 
                 if (args.length == 2) {
                     String first = args[0].toLowerCase();
-                    if ("web".equals(first)) {
-                        String prefix = args[1].toLowerCase();
-                        if ("token".startsWith(prefix)) suggestions.add("token");
-                        return suggestions;
-                    }
                     if ("purge".equals(first)) {
                         String prefix = args[1].toLowerCase();
                         if ("items".startsWith(prefix)) suggestions.add("items");
@@ -145,17 +135,6 @@ public final class Powerhouse extends JavaPlugin {
                         if ("cpu".startsWith(prefix)) suggestions.add("cpu");
                         if ("ram".startsWith(prefix)) suggestions.add("ram");
                         if ("storage".startsWith(prefix)) suggestions.add("storage");
-                        return suggestions;
-                    }
-                }
-
-                if (args.length == 3) {
-                    String first = args[0].toLowerCase();
-                    if ("web".equals(first) && "token".equalsIgnoreCase(args[1])) {
-                        String prefix = args[2].toLowerCase();
-                        if ("create".startsWith(prefix)) suggestions.add("create");
-                        if ("revoke".startsWith(prefix)) suggestions.add("revoke");
-                        if ("show".startsWith(prefix)) suggestions.add("show");
                         return suggestions;
                     }
                 }
@@ -200,7 +179,7 @@ public final class Powerhouse extends JavaPlugin {
                 try { optimizations.registerScalable(aiManagement); } catch (Throwable ignored) {}
             } catch (Throwable ignored) {}
             try {
-                itemRemover = new kaiakk.powerhouse.world.explosion.ItemRemover(this);
+                itemRemover = new kaiakk.powerhouse.world.physics.ItemRemover(this);
                 itemRemover.start();
             } catch (Throwable ignored) {}
         } catch (Throwable ignored) {}
@@ -267,7 +246,7 @@ public final class Powerhouse extends JavaPlugin {
             leakPreventionTask = kaiakk.multimedia.classes.SchedulerHelper.runTimerMinutes(this, new Runnable() {
                 public void run() {
                     try {
-                        kaiakk.powerhouse.java.LeakPrevention.purgeCollections();
+                        kaiakk.powerhouse.helpers.java.LeakPrevention.purgeCollections();
                     } catch (Throwable t) {
                         try { kaiakk.powerhouse.helpers.logs.PowerhouseLogger.error("LeakPrevention periodic purge failed: " + t.getMessage()); } catch (Throwable ignored) {}
                     }
@@ -461,14 +440,14 @@ public final class Powerhouse extends JavaPlugin {
         try {
             switch (sub) {
                 case "status":
-                    kaiakk.powerhouse.java.JvmMonitor.status(sender);
+                    kaiakk.powerhouse.helpers.java.JvmMonitor.status(sender);
                     return true;
                 case "gc":
-                    kaiakk.powerhouse.java.JvmMonitor.runGc(sender);
+                    kaiakk.powerhouse.helpers.java.JvmMonitor.runGc(sender);
                     return true;
                 case "heapdump": {
                     String file = (args.length >= 3) ? args[2] : null;
-                    kaiakk.powerhouse.java.JvmMonitor.heapDump(this, file, sender);
+                    kaiakk.powerhouse.helpers.java.JvmMonitor.heapDump(this, file, sender);
                     return true;
                 }
                 case "jfr":
@@ -565,57 +544,6 @@ public final class Powerhouse extends JavaPlugin {
     private boolean handleWeb(org.bukkit.command.CommandSender sender, String[] args) {
         int port = ConfigHelp.getInt("web-server.port", 8080);
         boolean enabled = ConfigHelp.getBoolean("web-server.enabled", true);
-        if (args != null && args.length >= 2 && "token".equalsIgnoreCase(args[1])) {
-            if (!sender.hasPermission("powerhouse")) {
-                sender.sendMessage(ColorConverter.colorize("&cYou don't have permission to manage web tokens."));
-                return true;
-            }
-
-            String action = (args.length >= 3) ? args[2].toLowerCase() : "help";
-            File webConfig = new File(getDataFolder(), "webconfig.yml");
-            YamlConfiguration cfg = YamlConfiguration.loadConfiguration(webConfig);
-
-            try {
-                    if ("create".equals(action)) {
-                    SecureRandom rnd = new SecureRandom();
-                    byte[] b = new byte[24];
-                    rnd.nextBytes(b);
-                    String token = Base64.getUrlEncoder().withoutPadding().encodeToString(b);
-                    cfg.set("adminToken", token);
-                    try { cfg.save(webConfig); } catch (IOException ioe) { }
-                    ConsoleLog.info("Generated admin token: " + token);
-                    sender.sendMessage(ColorConverter.colorize("&aNew admin token generated and saved to webconfig.yml. Check server console for the token."));
-                    return true;
-                } else if ("revoke".equals(action)) {
-                    if (cfg.contains("adminToken")) {
-                        cfg.set("adminToken", null);
-                        try { cfg.save(webConfig); } catch (IOException ioe) { }
-                        sender.sendMessage(ColorConverter.colorize("&aAdmin token revoked and removed from webconfig.yml."));
-                    } else {
-                        sender.sendMessage(ColorConverter.colorize("&eNo admin token was configured."));
-                    }
-                    return true;
-                } else if ("show".equals(action)) {
-                    if (cfg.contains("adminToken")) {
-                        String t = cfg.getString("adminToken");
-                        ConsoleLog.info("Current admin token: " + t);
-                        sender.sendMessage(ColorConverter.colorize("&aAdmin token printed to server console."));
-                    } else {
-                        sender.sendMessage(ColorConverter.colorize("&eNo admin token is configured."));
-                    }
-                    return true;
-                } else {
-                    sender.sendMessage(ColorConverter.colorize("&a/webpowerhouse web token <create|revoke|show>"));
-                    sender.sendMessage(ColorConverter.colorize("&7create - generate and save a new admin token"));
-                    sender.sendMessage(ColorConverter.colorize("&7revoke - remove the admin token from webconfig.yml"));
-                    sender.sendMessage(ColorConverter.colorize("&7show - display the current token (if any)"));
-                    return true;
-                }
-            } catch (Throwable t) {
-                sender.sendMessage(ColorConverter.colorize("&cError managing token: " + t.getMessage()));
-                return true;
-            }
-        }
 
         if (!enabled) {
             sender.sendMessage(ColorConverter.colorize("&cWeb server is disabled in config!"));

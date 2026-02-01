@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.world.explosion;
+package kaiakk.powerhouse.world.physics;
 
 import kaiakk.multimedia.classes.SchedulerHelper;
 import kaiakk.powerhouse.data.BlockKey;

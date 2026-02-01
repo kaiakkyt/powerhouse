@@ -3,6 +3,8 @@ package kaiakk.powerhouse.helpers.internal;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
+import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
+
 public class FoliaChecker {
 	private static volatile Boolean cached = null;
 
@@ -31,11 +33,10 @@ public class FoliaChecker {
 			}
 
 			try {
-				java.util.logging.Logger logger = (plugin != null) ? plugin.getLogger() : Bukkit.getLogger();
-				logger.info("Server version string: " + version);
-				logger.info("Bukkit.getName(): " + bukkitName);
-				logger.info("Server class: " + serverClass);
-				logger.info(foliaDetected ? "Folia detected!" : "Folia not detected!");
+				PowerhouseLogger.info("Server version string: " + version);
+				PowerhouseLogger.info("Bukkit.getName(): " + bukkitName);
+				PowerhouseLogger.info("Server class: " + serverClass);
+				PowerhouseLogger.info(foliaDetected ? "Folia detected!" : "Folia not detected!");
 			} catch (Throwable ignored) {}
 
 			cached = foliaDetected;
