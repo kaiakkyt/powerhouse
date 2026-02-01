@@ -6,7 +6,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.plugin.Plugin;
 
-import kaiakk.powerhouse.external.support.ProxyAwareness;
 import kaiakk.powerhouse.world.AllOptimizations;
 
 import java.math.BigDecimal;

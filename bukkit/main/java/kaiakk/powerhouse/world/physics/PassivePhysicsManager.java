@@ -23,8 +23,8 @@ public class PassivePhysicsManager implements Listener {
     private final Plugin plugin;
     private volatile org.bukkit.scheduler.BukkitTask task = null;
     private final Map<UUID, Long> passiveMarked = new ConcurrentHashMap<>();
-    private final Queue<Entity> entitiesToMakePassive = new LinkedList<>();
-    private final Queue<Entity> entitiesToRestore = new LinkedList<>();
+    private final Queue<java.util.UUID> entitiesToMakePassive = new LinkedList<>();
+    private final Queue<java.util.UUID> entitiesToRestore = new LinkedList<>();
 
     private static final int DEFAULT_THRESHOLD = 100;
     private static final double PLAYER_RADIUS = 32.0;
@@ -64,7 +64,9 @@ public class PassivePhysicsManager implements Listener {
     private void processEntityQueues() {
         // Process passive queue
         for (int i = 0; i < 10 && !entitiesToMakePassive.isEmpty(); i++) {
-            Entity e = entitiesToMakePassive.poll();
+            java.util.UUID id = entitiesToMakePassive.poll();
+            if (id == null) continue;
+            Entity e = Bukkit.getEntity(id);
             if (e != null && !e.isDead()) {
                 applyPassive(e);
             }
@@ -72,7 +74,9 @@ public class PassivePhysicsManager implements Listener {
         
         // Process restore queue
         for (int i = 0; i < 10 && !entitiesToRestore.isEmpty(); i++) {
-            Entity e = entitiesToRestore.poll();
+            java.util.UUID id = entitiesToRestore.poll();
+            if (id == null) continue;
+            Entity e = Bukkit.getEntity(id);
             if (e != null && !e.isDead()) {
                 applyRestore(e);
             }
@@ -156,12 +160,12 @@ public class PassivePhysicsManager implements Listener {
 
     private void makePassive(Entity e) {
         if (e == null) return;
-        entitiesToMakePassive.offer(e);
+        try { entitiesToMakePassive.offer(e.getUniqueId()); } catch (Throwable ignored) {}
     }
 
     private void restoreEntity(Entity e) {
         if (e == null) return;
-        entitiesToRestore.offer(e);
+        try { entitiesToRestore.offer(e.getUniqueId()); } catch (Throwable ignored) {}
     }
     
     private void applyPassive(Entity e) {

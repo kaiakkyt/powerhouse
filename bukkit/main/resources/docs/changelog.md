@@ -93,3 +93,7 @@ Powerhouse's full changelog!
 - Added a few aliases to the ```/powerhouse``` command.
 - Updated the leak prevention, due to continously rising RAM usage that still happened.
 - Removed the token verification from PowerCapturer.
+
+## v1.20.1
+- Working on fixing a memory leak problem.
+- More internal restructuring, these do not affect Powerhouse's functionality or API.

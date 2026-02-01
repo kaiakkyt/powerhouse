@@ -1,4 +1,4 @@
-package kaiakk.powerhouse.external.support;
+package kaiakk.powerhouse.external;
 
 public class AxiorSupport {
 	private AxiorSupport() {}

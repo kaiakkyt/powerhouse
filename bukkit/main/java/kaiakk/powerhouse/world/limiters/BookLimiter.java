@@ -14,7 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.plugin.Plugin;
 
-import kaiakk.powerhouse.calculations.BookCalculator;
+import kaiakk.powerhouse.calculations.entity.BookCalculator;
 
 import java.util.Collections;
 

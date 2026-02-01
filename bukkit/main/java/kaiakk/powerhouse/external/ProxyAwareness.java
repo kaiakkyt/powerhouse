@@ -1,7 +1,6 @@
-package kaiakk.powerhouse.external.support;
+package kaiakk.powerhouse.external;
 
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 

@@ -24,7 +24,8 @@ public class ItemRemover implements Listener {
     private final Plugin plugin;
     private volatile BukkitTask task = null;
     private volatile BukkitTask restoreTask = null;
-    private final java.util.concurrent.ConcurrentHashMap<java.util.UUID, org.bukkit.entity.Item> hiddenItems = new java.util.concurrent.ConcurrentHashMap<>();
+    // Store UUIDs instead of strong Item references to avoid retaining heavy objects
+    private final java.util.concurrent.ConcurrentHashMap<java.util.UUID, Long> hiddenItems = new java.util.concurrent.ConcurrentHashMap<>();
     private static final double PLAYER_CLEAR_RADIUS = 96.0;
     private static final double PLAYER_CLEAR_RADIUS_SQ = PLAYER_CLEAR_RADIUS * PLAYER_CLEAR_RADIUS;
     private static final int PURGE_INTERVAL_SECONDS = 300;
@@ -230,11 +231,11 @@ public class ItemRemover implements Listener {
         } catch (Throwable ignored) {}
 
         try {
-            try {
-                java.lang.reflect.Method m = p.getClass().getMethod("hideEntity", org.bukkit.entity.Entity.class);
-                m.invoke(p, it);
-                try { hiddenItems.put(it.getUniqueId(), it); } catch (Throwable ignored) {}
-            } catch (NoSuchMethodException ignored) {}
+                try {
+                    java.lang.reflect.Method m = p.getClass().getMethod("hideEntity", org.bukkit.entity.Entity.class);
+                    m.invoke(p, it);
+                    try { hiddenItems.put(it.getUniqueId(), System.currentTimeMillis()); } catch (Throwable ignored) {}
+                } catch (NoSuchMethodException ignored) {}
         } catch (Throwable ignored) {}
     }
 
@@ -250,7 +251,7 @@ public class ItemRemover implements Listener {
         } catch (Throwable ignored) {}
 
         try {
-            try {
+                try {
                 java.lang.reflect.Method m = p.getClass().getMethod("showEntity", org.bukkit.entity.Entity.class);
                 m.invoke(p, it);
                 try { hiddenItems.remove(it.getUniqueId()); } catch (Throwable ignored) {}
@@ -263,17 +264,19 @@ public class ItemRemover implements Listener {
             AllOptimizations ao = AllOptimizations.getInstance();
             double vel = ao != null ? ao.getMsptVelocity() : 0.0;
             if (vel <= hideVelocityThreshold) {
-                for (java.util.Map.Entry<java.util.UUID, org.bukkit.entity.Item> e : hiddenItems.entrySet()) {
+                for (java.util.UUID id : new java.util.ArrayList<>(hiddenItems.keySet())) {
                     try {
-                        org.bukkit.entity.Item it = e.getValue();
-                        if (it == null) { hiddenItems.remove(e.getKey()); continue; }
-                        if (!it.isValid() || it.isDead()) { hiddenItems.remove(e.getKey()); continue; }
+                        org.bukkit.entity.Entity ent = Bukkit.getEntity(id);
+                        if (!(ent instanceof org.bukkit.entity.Item)) { hiddenItems.remove(id); continue; }
+                        org.bukkit.entity.Item it = (org.bukkit.entity.Item) ent;
+                        if (it == null) { hiddenItems.remove(id); continue; }
+                        if (!it.isValid() || it.isDead()) { hiddenItems.remove(id); continue; }
                         World w = it.getWorld();
-                        if (w == null) { hiddenItems.remove(e.getKey()); continue; }
+                        if (w == null) { hiddenItems.remove(id); continue; }
                         for (Player p : w.getPlayers()) {
                             try { safeShowEntity(p, it); } catch (Throwable ignored) {}
                         }
-                        hiddenItems.remove(e.getKey());
+                        hiddenItems.remove(id);
                     } catch (Throwable ignored) {}
                 }
             }

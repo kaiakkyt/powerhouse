@@ -7,7 +7,6 @@ import kaiakk.multimedia.classes.*;
 import kaiakk.powerhouse.calculations.*;
 import kaiakk.powerhouse.data.*;
 import kaiakk.powerhouse.external.*;
-import kaiakk.powerhouse.external.support.WebManager;
 import kaiakk.powerhouse.helpers.*;
 import kaiakk.powerhouse.helpers.internal.ConfigHelp;
 import kaiakk.powerhouse.helpers.java.*;
@@ -153,7 +152,7 @@ public final class Powerhouse extends JavaPlugin {
 
         ConsoleLog.init(this);
         PowerhouseLogger.info("Powerhouse is running on version " + this.getDescription().getVersion());
-        try { kaiakk.powerhouse.external.support.ProxyAwareness.startListening(this); } catch (Throwable ignored) {}
+        try { kaiakk.powerhouse.external.ProxyAwareness.startListening(this); } catch (Throwable ignored) {}
         
         optimizations = new AllOptimizations(this);
         optimizations.start();
@@ -713,7 +712,7 @@ public final class Powerhouse extends JavaPlugin {
     @Override
     public void onDisable() {
         PowerhouseLogger.info("Powerhouse shutting down!");
-        try { kaiakk.powerhouse.external.support.ProxyAwareness.stopListening(this); } catch (Throwable ignored) {}
+        try { kaiakk.powerhouse.external.ProxyAwareness.stopListening(this); } catch (Throwable ignored) {}
         try { if (leakPreventionTask != null) kaiakk.multimedia.classes.SchedulerHelper.cancelTask(leakPreventionTask); } catch (Throwable ignored) {}
         
         if (optimizations != null) {
