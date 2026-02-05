@@ -1,8 +1,8 @@
 # Powerhouse — API Usage Guide
 
-Version: Last updated December 21, 2025
+Version: Last updated February 4, 2026
 
-This document is a developer-focused, comprehensive guide to using Powerhouse's public API to inspect runtime status, query optimization state, and interact safely with Powerhouse subsystems from other plugins. It covers typical read-only operations (getting metrics and state), safe interactions that must respect server threading / Folia, and recommended best practices.
+This document is a developer-focused guide to Powerhouse's public API. It shows the supported, stable ways other plugins should read metrics and state, and how to interact safely with Powerhouse subsystems (Folia-aware where applicable). The emphasis is on using the public `PowerhouseAPI` and `AllOptimizations` entry points rather than accessing internals.
 
 Contents
 - Introduction
@@ -27,95 +27,126 @@ Introduction
 ------------
 Powerhouse provides runtime optimizations for Bukkit/Paper/Folia servers: redstone culling, item/XP merging, entity AI management, hopper transfer limiting, and other maintenance systems. This guide shows how to safely read Powerhouse state and interact with it from another plugin.
 
-Quick Start: Accessing the API
---------------------------------
-Powerhouse exposes programmatic read-only access via `PowerhouseAPI` and a runtime orchestrator `AllOptimizations`. Most commonly you will simply call `AllOptimizations.getInstance()` to access runtime methods — note: `getInstance()` returns `null` if Powerhouse hasn't been started yet.
+**Quick Start: Accessing the API**
 
-Example — safe guard when Powerhouse might not be loaded:
+Powerhouse exposes a lightweight public API intended for other plugins. Prefer `kaiakk.powerhouse.external.PowerhouseAPI` for cross-plugin usage; it forwards to the runtime orchestrator `kaiakk.powerhouse.world.AllOptimizations` when available. `AllOptimizations.getInstance()` may return `null` if Powerhouse is not loaded or not yet initialized.
+
+Example — safely querying MSPT (recommended):
 
 ```java
-kaiakk.powerhouse.sync.AllOptimizations ops = kaiakk.powerhouse.sync.AllOptimizations.getInstance();
-if (ops == null) {
-	// Powerhouse not present or not yet initialized
-	return;
+// runtime lookup via the public API (no internals required)
+double mspt = kaiakk.powerhouse.external.PowerhouseAPI.getAverageMspt();
+if (mspt < 0) {
+	// Powerhouse unavailable or not ready
 }
-// proceed to query ops
+// use mspt
+```
+
+Example — directly using `AllOptimizations` when you have a direct dependency:
+
+```java
+kaiakk.powerhouse.world.AllOptimizations ops = kaiakk.powerhouse.world.AllOptimizations.getInstance();
+if (ops == null) return; // not loaded
+double mspt = ops.getAverageMspt();
 ```
 
 Core API Reference
 -------------------
 
 `PowerhouseAPI`
-- Lightweight wrapper API intended for other plugins (read-only). Use this when you want to avoid a direct dependency on internal classes; the API forwards to `AllOptimizations` where appropriate.
+- Lightweight wrapper API intended for other plugins (read-only). Full class name: `kaiakk.powerhouse.external.PowerhouseAPI`. Use this from other plugins to avoid a compile-time dependency on Powerhouse internals; the API forwards to `AllOptimizations` where appropriate.
 
-`AllOptimizations`
+PowerhouseAPI Methods (common)
+
+- `double getAverageMspt()` — current average MSPT, or `-1` if unavailable.
+- `double getAverageMsptRounded(int decimals)` — MSPT rounded to `decimals` places; throws `IllegalArgumentException` if `decimals < 0`.
+- `long getCrammingRemovals()` — total entity removals performed due to mob-cramming mitigation, or `0` if unavailable.
+- `long getItemRemovals()` — total item removals performed by cleanup systems, or `0` if unavailable.
+- `Map<String,Object> getStatisticsSnapshot()` — immutable snapshot of global optimization statistics, or empty map.
+- `Set<String> getDebugUsersSnapshot()` — snapshot of debug users enabled for per-user debug.
+- `boolean isDebugEnabled()` — whether global debug mode is enabled.
+- `String getDebugOwner()` — name of the current debug owner, or `null`.
+- `boolean isDebugEnabledForUser(String name)` — whether debug is enabled for `name`.
+- `boolean isLocationCulled(Location location)` — whether redstone updates are currently culled at `location`.
+- `boolean isLocationCulled(String worldName, int x, int y, int z)` — convenience overload using coordinates.
+- `boolean isLocationThrottled(Location location)` — best-effort check for deferred/throttled locations (calls async helpers if available).
+- `boolean isEntityAiDisabled(UUID entityId)` — whether AI is currently disabled for the entity.
+- `boolean isProxyPresent()` — whether a proxy has been detected or configured.
+- `String getProxyType()` — human-friendly proxy type (e.g. "NONE", "BUNGEE", "VELOCITY", "MIXED", "CONFIGURED_ONLY").
+- `String getVersion()` — plugin version from the loaded plugin description, or `null`.
+- `boolean isPowerhouseActive()` — true if Powerhouse is loaded and running.
+- `boolean enqueueEntityTask(Entity ent, Runnable task)` — enqueue a synchronous task to run relative to an entity's scheduler; returns true if queued.
+- `void markEntityDead(Entity ent)` — best-effort helper to mark an entity dead (use with care; prefer `enqueueEntityTask`).
+
+Notes:
+- `PowerhouseAPI` is stable for read-only operations; prefer it for cross-plugin integrations to avoid depending on internal package names.
+- Methods that return collections (`getStatisticsSnapshot`, `getDebugUsersSnapshot`) return safe, immutable views.
+
+`AllOptimizations` (runtime orchestrator — full class name: `kaiakk.powerhouse.world.AllOptimizations`)
 - `getInstance()` — returns the singleton `AllOptimizations` instance or `null`.
-- `double getAverageMspt()` — returns server average milliseconds-per-tick (MSPT). Returns `0.0` if not available.
-- `boolean isLocationCulled(Location loc)` — returns `true` if Powerhouse currently has redstone updates disabled (culled) at `loc`. Safe to call from main thread — ensure your caller has a valid `Location` with a valid `World`.
-- `boolean isEntityAiDisabled(UUID id)` — returns `true` if the `EntityPusher`/AI-management subsystem currently has disabled AI for the entity with `id`.
-- `void enqueueEntityTask(Entity ent, Runnable task)` — helper that attempts to schedule `task` against the entity's region scheduler (if present), otherwise runs the task at `ent`'s `Location` (region-aware), otherwise falls back to an internal pending-sync queue. Use this to schedule small operations that must run on the entity's owning thread/region.
-- `void addCrammingRemovals(long n)`, `void addItemRemovals(long n)` — instrumentation counters; rarely needed by external code.
+- `double getAverageMspt()` — returns server average milliseconds-per-tick (MSPT). Returns a non-negative value when available; `PowerhouseAPI` will return `-1` when unavailable.
+- `boolean isLocationCulled(Location loc)` — returns `true` if Powerhouse currently suppresses redstone updates at `loc`.
+- `boolean isEntityAiDisabled(UUID id)` — returns `true` if AI is currently disabled for that entity.
+- `void enqueueEntityTask(Entity ent, Runnable task)` — schedule a task on the entity/region owning thread when possible; safe cross-platform helper for Folia and Paper.
+- Instrumentation helpers such as `addCrammingRemovals` / `addItemRemovals` exist but are rarely needed.
 
-`Calculations` (async redstone & culling helpers)
-- `static List<Location> scanRedstoneCullingCandidates()` — returns candidate Locations that appear to have excessive block updates.
-- `static Map<Location, Integer> scanRedstoneCullingCandidatesWithCounts(int minUpdates)` — returns candidate locations and their update counts.
-- `static void markLocationCulled(Location loc)` — mark a block location culled (internal; you generally won't call this).
-- `static boolean isLocationCulled(Location loc)` — same as `AllOptimizations.isLocationCulled` but static.
-- `static void uncullAll()` — safety valve that clears all culled locations.
-- `static void clearWorldData(String worldName)` — remove tracked redstone/cull data related to a world (called on `WorldUnload`).
+`Calculations` (async helpers — under `kaiakk.powerhouse.calculations`)
+- Useful async helpers and scanners for redstone culling. The exact package may change between Powerhouse releases; prefer `PowerhouseAPI`/`AllOptimizations` first. Available helpers include scanning candidate locations and clearing per-world data.
 
 Other Utility Classes
 - `EntityLookup` — safe UUID→Entity lookup with fallbacks for older servers (scans loaded chunks when modern method missing). Use `EntityLookup.getEntity(UUID)` when you cannot rely on `Bukkit.getEntity(UUID)` to exist.
 - `ApiCompat` — compatibility wrappers for operations like `setAI(LivingEntity, boolean)`, `getMaxHealth`, and `playSoundSafe` across server versions.
 - `DebugLog` — central debug logger. Use only for development/debugging to avoid spamming server console. `DebugLog.debug(String)` will check the Powerhouse debug flag before printing.
 
-Common Examples
----------------
+**Common Examples**
 
-1) Get MSPT and the plugin statistics
+1) Get MSPT and statistics (recommended via `PowerhouseAPI`):
 
 ```java
-kaiakk.powerhouse.sync.AllOptimizations ops = kaiakk.powerhouse.sync.AllOptimizations.getInstance();
+double mspt = kaiakk.powerhouse.external.PowerhouseAPI.getAverageMspt();
+// mspt may be -1 if Powerhouse is not loaded
+```
+
+Or, if you have a compile-time dependency and need other internals:
+
+```java
+kaiakk.powerhouse.world.AllOptimizations ops = kaiakk.powerhouse.world.AllOptimizations.getInstance();
 if (ops != null) {
 	double mspt = ops.getAverageMspt();
 	long crammingRemovals = ops.getCrammingRemovals();
 	long itemRemovals = ops.getItemRemovals();
-	// Use or present values
 }
 ```
 
-2) Check whether a location is currently culled (redstone suspended)
+2) Check whether a location is culled (use `PowerhouseAPI` or `AllOptimizations`):
 
 ```java
 Location loc = someBlock.getLocation();
-kaiakk.powerhouse.sync.AllOptimizations ops = kaiakk.powerhouse.sync.AllOptimizations.getInstance();
-if (ops != null && ops.isLocationCulled(loc)) {
-	// location currently suppressed by Powerhouse
+if (kaiakk.powerhouse.external.PowerhouseAPI.isLocationCulled(loc)) {
+	// suppressed
 }
+// or via AllOptimizations when available
 ```
 
 3) Query whether an entity currently has AI disabled
 
 ```java
 UUID id = someEntity.getUniqueId();
-kaiakk.powerhouse.sync.AllOptimizations ops = kaiakk.powerhouse.sync.AllOptimizations.getInstance();
-if (ops != null && ops.isEntityAiDisabled(id)) {
-	// AI currently disabled
+if (kaiakk.powerhouse.external.PowerhouseAPI.isEntityAiDisabled(id)) {
+	// AI disabled
 }
 ```
 
-4) Request safe removal (mark an entity dead) from another plugin
+4) Request safe removal (enqueue a task)
 
-Powerhouse provides `markEntityDead(Entity)` internally to safely remove an entity in a version-compatible way. Because this method is internal, prefer requesting a removal via Powerhouse's task enqueueing or inter-plugin contract, but if you must call the internal helper, make sure you have compile-time access and call it on the server/main thread:
+Prefer using `enqueueEntityTask` rather than calling removal internals directly:
 
 ```java
-// best: schedule a run on the main thread that asks Powerhouse to remove
-kaiakk.powerhouse.sync.AllOptimizations ops = kaiakk.powerhouse.sync.AllOptimizations.getInstance();
+kaiakk.powerhouse.world.AllOptimizations ops = kaiakk.powerhouse.world.AllOptimizations.getInstance();
 if (ops != null) {
-	// use the enqueue helper to ask Powerhouse to run a task at the entity's owning location
 	ops.enqueueEntityTask(someEntity, () -> {
 		try {
-			kaiakk.powerhouse.sync.AllOptimizations.getInstance().markEntityDead(someEntity);
+			kaiakk.powerhouse.world.AllOptimizations.getInstance().markEntityDead(someEntity);
 		} catch (Throwable ignored) {}
 	});
 }
@@ -139,13 +170,13 @@ if (ops != null) {
 }
 ```
 
-Threading and Folia safety
----------------------------
-Powerhouse is built to be compatible with Paper and Folia. That means:
+**Threading and Folia safety**
 
-- Many subsystems take a snapshot on the main thread (or region thread) and run CPU-heavy computations async, then apply results back on the owning thread using region-aware scheduling.
-- When calling into Powerhouse from your plugin, assume that most `AllOptimizations` operations expect a valid `Location`/Entity and that entity access must be done on the owning thread. If you need to access an `Entity` safely by UUID from an async context, use `EntityLookup.getEntity(UUID)` on the main thread or schedule a task using the server scheduler.
-- Do not access or store `World` or `Location` objects for long-term caching in static maps — prefer storing weak references or world names, and clear cached references on `WorldUnloadEvent` (Powerhouse already clears its internal caches on unload).
+Powerhouse is compatible with Paper and Folia. Key points:
+
+- Heavy computations are often done async and results applied on the owning thread/region.
+- When calling into `AllOptimizations` or Powerhouse helpers, assume entity/world access must follow the server's threading model. Use `enqueueEntityTask` or schedule a main/region task for entity/world operations.
+- Avoid long-lived strong references to `World`/`Location`; prefer world names and clear caches on unload.
 
 World Unload / Memory-safety notes
 ----------------------------------

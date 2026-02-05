@@ -104,6 +104,9 @@ public class HardwareStats {
 				} catch (Throwable ignored) {}
 			}
 		} catch (Throwable ignored) {}
+		if (physical > 1) {
+			physical = physical / 2;
+		}
 		this.physicalCores = physical;
 	}
 

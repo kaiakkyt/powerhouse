@@ -97,3 +97,7 @@ Powerhouse's full changelog!
 ## v1.20.1
 - Working on fixing a memory leak problem.
 - More internal restructuring, these do not affect Powerhouse's functionality or API.
+
+## v1.20.2
+- Fixed CPU core detection logic.
+- Minor internal cleanup.
