@@ -106,4 +106,4 @@ Powerhouse's full changelog!
 - Working on maintaining Folia support.
 - Updated the scheduler system.
 - Working on reducing the size of future releases.
-- Small rewrites.
+- Small rewrites and internal cleaning up.
