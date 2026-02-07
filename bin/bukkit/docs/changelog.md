@@ -101,3 +101,9 @@ Powerhouse's full changelog!
 ## v1.20.2
 - Fixed CPU core detection logic.
 - Minor internal cleanup.
+
+## v1.21.0
+- Working on maintaining Folia support.
+- Updated the scheduler system.
+- Working on reducing the size of future releases.
+- Small rewrites.

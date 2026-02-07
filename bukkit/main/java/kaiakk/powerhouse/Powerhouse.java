@@ -120,14 +120,14 @@ public final class Powerhouse extends JavaPlugin {
                     }
                     if ("ai".equals(first)) {
                         try {
-                            return PlayerGather.getOnlinePlayerNames().stream()
+                            return getServer().getOnlinePlayers().stream()
+                                .map(p -> p.getName())
                                 .filter(n -> n.toLowerCase().startsWith(args[1].toLowerCase()))
                                 .limit(20)
                                 .collect(java.util.stream.Collectors.toList());
                         } catch (Throwable t) {
                         }
                         return suggestions;
-                    
                     }
                     if ("hardware".equals(first)) {
                         String prefix = args[1].toLowerCase();
