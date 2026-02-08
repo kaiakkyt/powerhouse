@@ -112,3 +112,8 @@ Powerhouse's full changelog!
 
 ## v1.21.1
 - Added a garbage collection helper, to stop GC pauses and GC lag spikes.
+
+## v1.22.0
+- Enabled the experimental garbage collector helper.
+- Added a anti-exploit packet limiter, to stop packet exploits.
+- Internal code cleaning up.

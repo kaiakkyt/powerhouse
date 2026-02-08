@@ -12,6 +12,7 @@ import kaiakk.powerhouse.helpers.internal.ConfigHelp;
 import kaiakk.powerhouse.helpers.java.*;
 import kaiakk.powerhouse.helpers.logs.PowerhouseLogger;
 import kaiakk.powerhouse.world.*;
+import kaiakk.powerhouse.world.limiters.PacketLimiter;
 
 public final class Powerhouse extends JavaPlugin {
 
@@ -197,6 +198,10 @@ public final class Powerhouse extends JavaPlugin {
             serverController = new kaiakk.powerhouse.world.controllers.ServerController(this);
             serverController.start();
         } catch (Throwable ignored) {}
+
+        try {
+            try { getServer().getPluginManager().registerEvents(new PacketLimiter(this), this); } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {}
         
         try {
             boolean webEnabled = ConfigHelp.getBoolean("web-server.enabled", true);
@@ -261,6 +266,16 @@ public final class Powerhouse extends JavaPlugin {
                     }
                 }
             }, 10.0, 10.0);
+        } catch (Throwable ignored) {}
+
+        try {
+            try {
+                kaiakk.powerhouse.helpers.java.GarbageCollection.startAutoSoftGC(5000, 0.75, 4, 200, 10000);
+                PowerhouseLogger.info("Soft GC monitor started: " + kaiakk.powerhouse.helpers.java.GarbageCollection.getDetectedGCNames());
+                if (kaiakk.powerhouse.helpers.java.GarbageCollection.isLowLatencyGC()) {
+                    PowerhouseLogger.warn("Low-latency GC detected; explicit System.gc() may be ignored or asynchronous.");
+                }
+            } catch (Throwable ignored) {}
         } catch (Throwable ignored) {}
     }
 
@@ -724,6 +739,7 @@ public final class Powerhouse extends JavaPlugin {
         PowerhouseLogger.info("Powerhouse shutting down!");
         try { kaiakk.powerhouse.external.ProxyAwareness.stopListening(this); } catch (Throwable ignored) {}
         try { if (leakPreventionTask != null) kaiakk.multimedia.classes.SchedulerHelper.cancelTask(leakPreventionTask); } catch (Throwable ignored) {}
+        try { kaiakk.powerhouse.helpers.java.GarbageCollection.stopAutoSoftGC(); } catch (Throwable ignored) {}
         
         if (optimizations != null) {
             optimizations.stop();
@@ -753,6 +769,7 @@ public final class Powerhouse extends JavaPlugin {
         try { LeakPrevention.shutdownAll(); } catch (Throwable ignored) {}
         try { LeakPrevention.purgeCollections(); } catch (Throwable ignored) {}
 
+        try { kaiakk.powerhouse.world.limiters.PacketLimiter.shutdown(); } catch (Throwable ignored) {}
         try { INSTANCE = null; } catch (Throwable ignored) {}
         PowerhouseLogger.info("Powerhouse out!");
         PowerhouseLogger.info("Goodbye.");
