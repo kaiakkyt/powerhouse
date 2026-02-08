@@ -12,7 +12,7 @@ softdepend: [ Multimedia ]
 commands:
   powerhouse:
     description: "Do various things with Powerhouse that are related to debugging and maintenance."
-    usage: "/powerhouse <stats|mspt|isculled|ai|jvm|purge|reload|web>"
+    usage: "/powerhouse <stats|mspt|isculled|ai|jvm|purge|reload|web|debug>"
     permission: powerhouse
     permission-message: "You don't have permission to use this command."
     aliases: [ ph, pwr, power, pwh ] 
