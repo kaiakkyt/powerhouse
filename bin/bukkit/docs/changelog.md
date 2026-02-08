@@ -116,4 +116,5 @@ Powerhouse's full changelog!
 ## v1.22.0
 - Enabled the experimental garbage collector helper.
 - Added a anti-exploit packet limiter, to stop packet exploits.
+- Rewrote the ServerController module for better server killing.
 - Internal code cleaning up.

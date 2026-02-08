@@ -20,20 +20,20 @@ public class ServerController {
     private final AtomicBoolean countingDown = new AtomicBoolean(false);
     private final AtomicInteger consecutiveHigh = new AtomicInteger(0);
 
-    private final double thresholdMspt;
-    private static final double BUFFER_MSPT = 50.0;
-    private static final double EMERGENCY_MSPT = 200.0;
+    private static final double EMERGENCY_MSPT = 325.0;
+    private static final double CRITICAL_SHUTDOWN_MSPT = 450.0;
+    private static final double WARN_MSPT = 150.0;
+    private static final double COUNTDOWN_MSPT = 250.0;
     private final int graceSeconds;
+    private final AtomicBoolean warned = new AtomicBoolean(false);
 
     public ServerController(JavaPlugin plugin) {
-        this(plugin, 142.0, 20);
+        this(plugin, 20);
     }
 
-    public ServerController(JavaPlugin plugin, double thresholdMspt, int graceSeconds) {
+    public ServerController(JavaPlugin plugin, int graceSeconds) {
         this.plugin = plugin;
-        this.thresholdMspt = thresholdMspt;
         this.graceSeconds = graceSeconds;
-        
     }
 
     public void start() {
@@ -72,6 +72,28 @@ public class ServerController {
             if (Double.isNaN(mspt) || mspt < 0.0) mspt = 0.0;
 
             try {
+                if (mspt >= CRITICAL_SHUTDOWN_MSPT) {
+                    try { Bukkit.getLogger().warning("Powerhouse: CRITICAL MSPT spike >= " + CRITICAL_SHUTDOWN_MSPT + "ms detected - forcing IMMEDIATE shutdown"); } catch (Throwable ignored) {}
+                    try {
+                        if (monitorTask != null) {
+                            SchedulerHelper.cancelTask(monitorTask);
+                            monitorTask = null;
+                        }
+                    } catch (Throwable t) {
+                        try { Bukkit.getLogger().log(Level.WARNING, "Powerhouse: failed to cancel monitor task during critical shutdown", t); } catch (Throwable ignored) {}
+                    }
+                    try {
+                        if (countdownTask != null) {
+                            SchedulerHelper.cancelTask(countdownTask);
+                            countdownTask = null;
+                        }
+                    } catch (Throwable t) {
+                        try { Bukkit.getLogger().log(Level.WARNING, "Powerhouse: failed to cancel countdown task during critical shutdown", t); } catch (Throwable ignored) {}
+                    }
+                    try { finalizeShutdown(); } catch (Throwable t) { try { Bukkit.getLogger().log(Level.WARNING, "Powerhouse: critical finalizeShutdown failed", t); } catch (Throwable ignored) {} }
+                    return;
+                }
+
                 if (mspt >= EMERGENCY_MSPT) {
                     try { Bukkit.getLogger().warning("Powerhouse: critical MSPT spike >= " + EMERGENCY_MSPT + "ms detected - forcing immediate shutdown"); } catch (Throwable ignored) {}
                     try {
@@ -95,10 +117,17 @@ public class ServerController {
                 }
             } catch (Throwable t) { try { Bukkit.getLogger().log(Level.WARNING, "Powerhouse: error evaluating emergency MSPT condition", t); } catch (Throwable ignored) {} }
 
-            double lower = Math.max(0.0, thresholdMspt - BUFFER_MSPT);
-            double upper = thresholdMspt + BUFFER_MSPT;
+            // Warn if above WARN_MSPT (one-time until it drops again)
+            if (mspt >= WARN_MSPT) {
+                if (warned.compareAndSet(false, true)) {
+                    Bukkit.broadcastMessage("\u00A7e[Powerhouse] Warning: server MSPT high (" + String.format("%.2f", mspt) + "ms). If this continues the server may shut down.");
+                }
+            } else {
+                warned.set(false);
+            }
 
-            if (mspt >= lower && mspt <= upper) {
+            // Only begin countdown when sustained MSPT >= COUNTDOWN_MSPT
+            if (mspt >= COUNTDOWN_MSPT) {
                 int now = consecutiveHigh.incrementAndGet();
                 if (now >= 4) {
                     if (countingDown.compareAndSet(false, true)) {
@@ -146,7 +175,7 @@ public class ServerController {
     }
 
     private void finalizeShutdown() {
-        String reason = "Server shutting down due to critical performance issues.";
+        String reason = "The server has been shutdown due to performance issues! Please reconnect later if fixed.";
         try {
             try {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "save-all");

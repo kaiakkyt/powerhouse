@@ -17,16 +17,17 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicInteger;
 import kaiakk.multimedia.classes.SchedulerHelper;
+import kaiakk.multimedia.classes.ColorConverter;
 
 public class PacketLimiter implements Listener {
 
     private final Plugin plugin;
 
     private enum ActionType {
-        MOVEMENT(80),
-        INTERACT(30),
-        GUI(40),
-        CHAT(10);
+        MOVEMENT(125),
+        INTERACT(55),
+        GUI(35),
+        CHAT(15);
 
         final int maxPerSecond;
         ActionType(int max) { this.maxPerSecond = max; }
@@ -85,7 +86,7 @@ public class PacketLimiter implements Listener {
             try { vl = win.violationCount.incrementAndGet(); } catch (Throwable ignored) {}
 
             final int violations = vl;
-            final String playerMsg = "§cYou are sending packets too fast (" + type.name() + "). Violation: " + violations;
+            final String playerMsg = ColorConverter.colorize("&cYou are sending packets too fast (" + type.name() + "). Violation: " + violations);
             final String consoleMsg = "PacketLimiter: " + player.getName() + " (" + id + ") exceeded " + type.name() + " threshold (" + current + ") vl=" + violations;
 
             try {
@@ -94,7 +95,7 @@ public class PacketLimiter implements Listener {
                     try { PowerhouseLogger.warn(consoleMsg); } catch (Throwable ignored) {}
                     try {
                         if (violations > 10) {
-                            try { player.kickPlayer("§cKicked for excessive packet spam."); } catch (Throwable ignored) {}
+                            try { player.kickPlayer(playerMsg); } catch (Throwable ignored) {}
                             try { userStats.remove(id); } catch (Throwable ignored) {}
                         }
                     } catch (Throwable ignored) {}
