@@ -40,7 +40,7 @@ public final class Powerhouse extends JavaPlugin {
         defaults.put("redstone-culling.max-updates-per-second", 200);
         defaults.put("item-hiding.distance", 16.0);
         defaults.put("item-hiding.velocity-threshold", 5.0);
-        defaults.put("web-server.enabled", true);
+        defaults.put("web-server.enabled", false);
         defaults.put("web-server.port", 5890);
 
         if (!ConfigHelp.getBoolean("enabled", true)) {
