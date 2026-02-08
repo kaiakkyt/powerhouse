@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'kaiakk'
-version = '1.21.0'
+version = '1.21.1'
 def targetJavaVersion = 8
 
 repositories {
