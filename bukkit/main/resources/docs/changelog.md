@@ -107,3 +107,4 @@ Powerhouse's full changelog!
 - Updated the scheduler system.
 - Working on reducing the size of future releases.
 - Small rewrites and internal cleaning up.
+- PowerCapturer is now disabled and uses a slightly different port by default now, and has port warnings.

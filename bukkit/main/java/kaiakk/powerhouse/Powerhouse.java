@@ -2,6 +2,9 @@ package kaiakk.powerhouse;
 
 import org.bukkit.plugin.java.JavaPlugin;
 import java.io.File;
+import java.util.Arrays;
+import java.util.List;
+
 import kaiakk.multimedia.classes.*;
 
 import kaiakk.powerhouse.external.*;
@@ -38,13 +41,23 @@ public final class Powerhouse extends JavaPlugin {
         defaults.put("item-hiding.distance", 16.0);
         defaults.put("item-hiding.velocity-threshold", 5.0);
         defaults.put("web-server.enabled", true);
-        defaults.put("web-server.port", 8080);
+        defaults.put("web-server.port", 5890);
 
         if (!ConfigHelp.getBoolean("enabled", true)) {
             PowerhouseLogger.error("Powerhouse is disabled in the config. Disabling plugin...");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+
+        List<Integer> restrictedPorts = Arrays.asList(25565, 25577, 25544);
+        int chosenPort = ConfigHelp.getInt("web-server.port", 5890);
+        
+            if (chosenPort < 1024 || restrictedPorts.contains(chosenPort)) {
+                PowerhouseLogger.error("Port " + chosenPort + " is not recommended or is reserved.");
+                PowerhouseLogger.error("Please change 'web-server.port' in your config!");
+            return;
+        }
+
 
         ConfigHelp.ensureDefaults(defaults);
 
