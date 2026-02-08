@@ -21,7 +21,7 @@ public class ServerController {
     private final AtomicInteger consecutiveHigh = new AtomicInteger(0);
 
     private static final double EMERGENCY_MSPT = 325.0;
-    private static final double CRITICAL_SHUTDOWN_MSPT = 450.0;
+    private static final double CRITICAL_SHUTDOWN_MSPT = 425.0;
     private static final double WARN_MSPT = 150.0;
     private static final double COUNTDOWN_MSPT = 250.0;
     private final int graceSeconds;
@@ -117,7 +117,6 @@ public class ServerController {
                 }
             } catch (Throwable t) { try { Bukkit.getLogger().log(Level.WARNING, "Powerhouse: error evaluating emergency MSPT condition", t); } catch (Throwable ignored) {} }
 
-            // Warn if above WARN_MSPT (one-time until it drops again)
             if (mspt >= WARN_MSPT) {
                 if (warned.compareAndSet(false, true)) {
                     Bukkit.broadcastMessage("\u00A7e[Powerhouse] Warning: server MSPT high (" + String.format("%.2f", mspt) + "ms). If this continues the server may shut down.");
@@ -126,7 +125,6 @@ public class ServerController {
                 warned.set(false);
             }
 
-            // Only begin countdown when sustained MSPT >= COUNTDOWN_MSPT
             if (mspt >= COUNTDOWN_MSPT) {
                 int now = consecutiveHigh.incrementAndGet();
                 if (now >= 4) {
